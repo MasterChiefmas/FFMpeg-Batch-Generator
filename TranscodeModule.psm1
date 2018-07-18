@@ -52,7 +52,7 @@ function Get-FFMpeg-Cmd{
 
     # WMV processing:version with QSV HEVC target, AAC audio@96kbps
     # dxva2 decode, upload frames for QSV transform and encode.
-    $ffmpegWMVBase = 'start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel dxva2 -i "srcPathReplace"  -init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" -c:v hevc_qvc -b:v 400k -c:a aac -b:a 96k -y "' + $tgtPath + 'tgtPathReplace"'
+    $ffmpegWMVBase = 'start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel dxva2 -i "srcPathReplace"  -init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" -load_plugin hevc_hw -c:v hevc_qsv -b:v 400k -c:a aac -b:a 96k -y "' + $tgtPath + 'tgtPathReplace"'
 
     # The list of extensions that will be considered video files to write a statement for
     $vidExtensions = @('mkv','mp4','wmv','avi','mpg','flv','mov','vob','m4v')
@@ -70,7 +70,7 @@ function Get-FFMpeg-Cmd{
     # Write-Host "Folder Count:" $fldr
     try {
         Foreach ($fldr in $tld){
-            Write-Host 'Processing folder:' $fldr.Name
+            Write-Host 'Processing item:' $fldr.Name
             try {
                 $files = Get-ChildItem -File -Recurse -LiteralPath $fldr.FullName
                 Foreach ($file in $files){
