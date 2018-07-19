@@ -41,18 +41,22 @@ function Get-FFMpeg-Cmd{
     $srcPath
 
     # $ffmpeg_SW_Base software decoder in case the hardware decoder has issues, which seems to happen every so often
-    $ffmpeg_SW_Base = 'rem start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel qsv -init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -i "srcPathReplace" -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" -b:v 800k -c:v h264_qsv -c:a copy -y "' + $tgtPath + 'tgtPathReplace"'
+    $ffmpeg_SW_Base = 'rem start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel qsv -init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -i "srcPathReplace" -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" -b:v 700k -c:v h264_qsv -c:a copy -y "' + $tgtPath + 'tgtPathReplace"'
 
-    # 2018-07-18: Switched to HEVC target
-    #$ffmpegBase = 'start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel qsv -c:v h264_qsv -i "srcPathReplace" -vf "scale_qsv=640:360" -b:v 800k -c:v h264_qsv -c:a copy -y "' + $tgtPath + 'tgtPathReplace"'
+    # H.264 Target, 700kbps
+	$ffmpegBase = 'start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel qsv -c:v h264_qsv -i "srcPathReplace" -vf "scale_qsv=640:360" -b:v 700k -c:v h264_qsv -c:a copy -y "' + $tgtPath + 'tgtPathReplace"'
 
     # HEVC target, 600kbps instead of 800 in h.264
-    $ffmpegBase = 'start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel qsv -c:v h264_qsv -i "srcPathReplace" -vf "scale_qsv=640:360" -load_plugin hevc_hw -b:v 600k -c:v hevc_qsv -c:a copy -y "' + $tgtPath + 'tgtPathReplace"'
+    # $ffmpegBase = 'start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel qsv -c:v h264_qsv -i "srcPathReplace" -vf "scale_qsv=640:360" -load_plugin hevc_hw -b:v 600k -c:v hevc_qsv -c:a copy -y "' + $tgtPath + 'tgtPathReplace"'
 
 
-    # WMV processing:version with QSV HEVC target, AAC audio@96kbps
+    # WMV hw accel processing:version with QSV HEVC target, AAC audio@96kbps
     # dxva2 decode, upload frames for QSV transform and encode.
-    $ffmpegWMVBase = 'start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel dxva2 -i "srcPathReplace"  -init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" -load_plugin hevc_hw -c:v hevc_qsv -b:v 400k -c:a aac -b:a 96k -y "' + $tgtPath + 'tgtPathReplace"'
+    # $ffmpegWMVBase = 'start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel dxva2 -i "srcPathReplace"  -init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" -load_plugin hevc_hw -c:v hevc_qsv -b:v 600k -c:a aac -b:a 96k -y "' + $tgtPath + 'tgtPathReplace"'
+
+    # WMV hybrid processing:SW decode, version with QSV HEVC target, AAC audio@96kbps
+    # dxva2 decode, upload frames for QSV transform and encode.
+    $ffmpegWMVBase = 'start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel dxva2 -i "srcPathReplace"  -init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" -load_plugin hevc_hw -c:v hevc_qsv -b:v 600k -c:a aac -b:a 96k -y "' + $tgtPath + 'tgtPathReplace"'
 
     # The list of extensions that will be considered video files to write a statement for
     $vidExtensions = @('mkv','mp4','wmv','avi','mpg','flv','mov','vob','m4v')
