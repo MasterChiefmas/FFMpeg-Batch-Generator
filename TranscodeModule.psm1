@@ -10,9 +10,9 @@ function Get-FFMpeg-Cmd{
      Be sure to adjust variables in script as needed:
      $tgtPath - where output files are written
      $srcPath 
-     $ffmpegBase - the base command written. See below:
-     
-     Replace $ffmpegBase with your command.
+     There are multiple base commands, to allow for different encoding parameters based on the file type.
+
+
      Tokens are:
      srcPathReplace - where the full file path of a source video file will be inserted
      tgtPathReplace - where the destination of output files will be inserted
@@ -23,6 +23,8 @@ function Get-FFMpeg-Cmd{
 
 .NOTES
      Author     : Jason Coleman - pobox@chiencorp.com
+
+
 .LINK
 
 #>
@@ -40,6 +42,9 @@ function Get-FFMpeg-Cmd{
     # srcPath not needed? derivied from file path?
     $srcPath
 
+    # FFPRobe line
+    $ffprobeBase = 'C:\ffmpeg\ffprobe.exe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 '
+
     # $ffmpeg_SW_Base software decoder in case the hardware decoder has issues, which seems to happen every so often
     $ffmpeg_SW_Base = 'rem start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel qsv -i "srcPathReplace" -init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" -b:v 700k -c:v h264_qsv -c:a copy -y "' + $tgtPath + 'tgtPathReplace"'
 
@@ -55,7 +60,7 @@ function Get-FFMpeg-Cmd{
 
     # WMV hybrid processing:SW decode, version with QSV HEVC target, AAC audio@96kbps
     # dxva2 decode, upload frames for QSV transform and encode.
-    $ffmpegWMVBase = 'start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel dxva2 -i "srcPathReplace"  -init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" -load_plugin hevc_hw -c:v hevc_qsv -b:v 600k -c:a aac -b:a 96k -y "' + $tgtPath + 'tgtPathReplace"'
+    $ffmpegWMVBase = 'start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel dxva2 -c:v _codecReplace_ -i "srcPathReplace" -init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" -load_plugin hevc_hw -c:v hevc_qsv -b:v 600k -c:a aac -b:a 96k -y "' + $tgtPath + 'tgtPathReplace"'
 
     # The list of extensions that will be considered video files to write a statement for
     $vidExtensions = @('mkv','mp4','wmv','avi','mpg','flv','mov','vob','m4v')
@@ -72,6 +77,7 @@ function Get-FFMpeg-Cmd{
     # process the TLDs
     # Write-Host "Folder Count:" $fldr
     try {
+        New-Item -Force .\transcode.bat
         Foreach ($fldr in $tld){
             Write-Host 'Processing item:' $fldr.Name
             try {
@@ -94,26 +100,51 @@ function Get-FFMpeg-Cmd{
                         catch {
                             Throw "It Broke"
                         }
-
+<#TODO
+WMV videos presenting a problem because wmv2 and wmv3 both show up, but there's no way to tell them apart with the extension. 
+ffmpeg doesn't like it if you designate the wrong codec, and leaving it unspecified also seems to cause issues.
+So maybe some code+tool to parse wmv header and determine the wmv version? ffprobe will probably work...
+#>
 
                         # Generate transcode command statement, based on the file extension write it to the batch file
                         # specifically, WMVs have a different command to process with.
                         # Might add support later for HEVC or h.264 based on command line switch, for now, it's going to be hardcoding to the appropriate variable.
+                        # _codecReplace_
                         switch ($fileExt)
                         {
                             "wmv"
                             {
                                 $transCode = $ffmpegWMVBase -Replace "srcPathReplace", $fileFullName
+                                #Write-Host "Transcode:$transcode"
+                                $ffprobeCmd = $ffprobeBase + $fileFullName
+                                $codec = Invoke-Expression $ffprobeCmd
+                                #Write-Host "Codec:$codec"
+                                switch ($codec){
+                                    "wmv1"{
+                                        $transcode = $transcode -Replace "_codecReplace_", "wmv1"
+                                    }
+                                    "wmv2"{
+                                        $transcode = $transcode -Replace "_codecReplace_", "wmv2"
+                                    }
+                                    "wvm3"{
+                                        $transcode = $transcode -Replace "_codecReplace_", "wmv3"
+                                    }
+                                    default{
+                                        # assuming wmv3, probably a terrible idea...but whatever
+                                        $transcode = $transcode -Replace "_codecReplace_", "wmv3"
+                                    }
+                                }
+                                $transCode = $transcode -Replace "srcPathReplace", $fileFullName
                             }
                             default
                             {
                                 $transCode = $ffmpegBase -Replace "srcPathReplace", $fileFullName
                             }
                         }
-                        if($fileExt -eq "wmv"){
-                            # process WMV
-                            $transCode = $ffmpegWMVBase -Replace "srcPathReplace", $fileFullName
-                        }
+                        # if($fileExt -eq "wmv"){
+                        #     # process WMV
+                        #     $transCode = $ffmpegWMVBase -Replace "srcPathReplace", $fileFullName
+                        # }
                         # $transCode = $ffmpegBase -Replace "srcPathReplace", $fileFullName
                         # $transCodeSW = $ffmpeg_SW_Base -Replace "srcPathReplace", $fileFullName
                         # $transcode = $transcode -Replace "tgtPathReplace", $NewName
