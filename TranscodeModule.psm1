@@ -3,13 +3,13 @@ function Get-FFMpeg-Cmd{
 <# .SYNOPSIS
      Generates a batch file of FFmpeg commands
 .DESCRIPTION
-     A function to generate a batch file with FFMpeg transcoding commands from a folder using a 
+     A function to generate a batch file with FFMpeg transcoding commands from a folder using a
      pre-defined, tokenized command as the base. The default command is also setup to run at belownormal
      priority.
 
      Be sure to adjust variables in script as needed:
      $tgtPath - where output files are written
-     $srcPath 
+     $srcPath
      There are multiple base commands, to allow for different encoding parameters based on the file type.
 
 
@@ -100,12 +100,6 @@ function Get-FFMpeg-Cmd{
                         catch {
                             Throw "It Broke"
                         }
-<#TODO
-WMV videos presenting a problem because wmv2 and wmv3 both show up, but there's no way to tell them apart with the extension. 
-ffmpeg doesn't like it if you designate the wrong codec, and leaving it unspecified also seems to cause issues.
-So maybe some code+tool to parse wmv header and determine the wmv version? ffprobe will probably work...
-#>
-
                         # Generate transcode command statement, based on the file extension write it to the batch file
                         # specifically, WMVs have a different command to process with.
                         # Might add support later for HEVC or h.264 based on command line switch, for now, it's going to be hardcoding to the appropriate variable.
