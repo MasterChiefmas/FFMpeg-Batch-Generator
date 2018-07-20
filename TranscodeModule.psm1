@@ -134,7 +134,7 @@ So maybe some code+tool to parse wmv header and determine the wmv version? ffpro
                                         $transcode = $transcode -Replace "_codecReplace_", "wmv3"
                                     }
                                 }
-                                $transCode = $transcode -Replace "srcPathReplace", $fileFullName
+                                #$transCode = $transcode -Replace "srcPathReplace", $fileFullName
                             }
                             default
                             {
