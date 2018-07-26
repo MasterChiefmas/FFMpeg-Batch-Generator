@@ -37,6 +37,19 @@ function Get-FFMpeg-Cmd{
       Write-Host "Processing files in $ckPath"
     # }
 
+    # change to reading source file info via ffprobe
+    # build concat decode and sw/hw decode based on that
+    # copy to hw decode seems like it'll be slower then qsv for sw decode, hw transform and encode
+    # have not tested sw decode, sw transform, hw encode. not sure if that's possible to upload frame after transorm..
+    # frame copies may incur too much penalty to ever be worth it at std def
+    #
+    # Example software path partial (transform+encode)
+    # -vf "scale=640:360" -b:v 700k -c:v libx264 -preset superfast -c:a copy -y outfile
+    # not sure if -b:v neede since preset is specified.
+    # alternate use CRF instead of bitrate?
+    # -vf "scale=640:360" -c:v libx264 -preset superfast -CRF 23 -c:a copy -y outfile
+
+
     # base path for where transcode targets will be written
     $tgtPath = "\\fs2\poolroot\croco\!recodes\"
     # srcPath not needed? derivied from file path?
@@ -48,6 +61,8 @@ function Get-FFMpeg-Cmd{
     # $ffmpeg_SW_Base software decoder in case the hardware decoder has issues, which seems to happen every so often
     #$ffmpeg_SW_Base = 'rem start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel qsv -i "srcPathReplace" -init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" -b:v 700k -c:v h264_qsv -c:a copy -y "' + $tgtPath + 'tgtPathReplace"'
 
+    # sw only, H.264 Target, superfast, 700k
+    $encodeSWOnly = ' -vf "scale=640:360" -c:v libx264-b:v 700k'
     # H.264 Target, 700kbps
 	$ffmpegBase = 'start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel qsv -c:v h264_qsv -i "srcPathReplace" -vf "scale_qsv=640:360" -b:v 700k -c:v h264_qsv -c:a copy -y "' + $tgtPath + 'tgtPathReplace"'
 
