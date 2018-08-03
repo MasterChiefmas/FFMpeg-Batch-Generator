@@ -7,6 +7,17 @@ function Get-FFMpeg-Cmd{
      pre-defined, tokenized command as the base. The default command is also setup to run at belownormal
      priority.
 
+    Parameters:
+    ckPath: Path to look for source videos. Not really doing anything with this right now, might not work/no support written yet.
+    mode: Force* writing ffmpeg commands to use specific approaches. Modes are hw/sw/hybrid:
+        hw: hardware decode, transform, and encode
+        sw: sofware decode, transform, and encode
+        hybrid: software decode, hardware transform and encode
+        auto: dynamically determine per file, based on ffprobe result what to do. generally, hw for h264 sources, sw for anything else.
+        * mode will not override behavior for specic formats, i.e. wmv will always be handled based on ffprobe results.
+    encodeTo: target codec to encode video to. h264, hevc
+    bitrate: target bitrate for video stream encode.
+
      Be sure to adjust variables in script as needed:
      $tgtPath - where output files are written
      $srcPath
@@ -29,12 +40,16 @@ function Get-FFMpeg-Cmd{
 
 #>
     Param(
-    [string]$ckPath=".\"
+    [string]$ckPath=".\",
+    [string]$mode="hw",
+    [string]$encodeTo="h264",
+    [string]$bitrate="700k"
     )
 
     # if ($IsDebug -eq $true){
     #   Write-Host "DEBUG"
       Write-Host "Processing files in $ckPath"
+      Write-Host "EncodeMode:$mode"
     # }
 
     # change to reading source file info via ffprobe
@@ -61,11 +76,26 @@ function Get-FFMpeg-Cmd{
     # $ffmpeg_SW_Base software decoder in case the hardware decoder has issues, which seems to happen every so often
     #$ffmpeg_SW_Base = 'rem start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel qsv -i "srcPathReplace" -init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" -b:v 700k -c:v h264_qsv -c:a copy -y "' + $tgtPath + 'tgtPathReplace"'
 
+
+    [string]$swDecode = '-c:v h264 '
+    [string]$hwDecode = '-hwaccel qsv -c:v h264_qsv '
+    [string]$swTransform = '-vf "scale=640:360" '
+    [string]$hwTransform = '-vf "scale_qsv=640:360" '
+    [string]$hybridTransform =  = '-init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" '
+    [string]$swEncode = '-c:v libx264 -preset superfast -b:v 700k '
+    # hardware encoding is currently locked to h264. Passed param handling needed, or values passed changed to ffmpeg values to allow changing it.
+    [string]$hwEncode = '-c:v h264_qsv -b:v 700k '
+    [string]$ffmpegcmd = ''
+    [string]$inputFile = '-i "srcPathReplace" '
+    # add code to adjust audio codec as needed (i.e. WMV source)
+    [string]$audioCodec = '-c:a copy '
+    [string]$outputFile= $audioCodec + '-y "' + $tgtPath + 'tgtPathReplace"'
+
     # sw only, H.264 Target, superfast, 700k
     $encodeSWOnly = ' -vf "scale=640:360" -c:v libx264-b:v 700k'
     # H.264 Target, 700kbps
-	$ffmpegBase = 'start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel qsv -c:v h264_qsv -i "srcPathReplace" -vf "scale_qsv=640:360" -b:v 700k -c:v h264_qsv -c:a copy -y "' + $tgtPath + 'tgtPathReplace"'
-
+	#$ffmpegBase = 'start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel qsv -c:v h264_qsv -i "srcPathReplace" -vf "scale_qsv=640:360" -b:v 700k -c:v h264_qsv -c:a copy -y "' + $tgtPath + 'tgtPathReplace"'
+    $ffmpegBase = 'start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe '
     # HEVC target, 600kbps
     # $ffmpegBase = 'start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel qsv -c:v h264_qsv -i "srcPathReplace" -vf "scale_qsv=640:360" -load_plugin hevc_hw -b:v 600k -c:v hevc_qsv -c:a copy -y "' + $tgtPath + 'tgtPathReplace"'
 
@@ -76,6 +106,9 @@ function Get-FFMpeg-Cmd{
     # WMV hybrid processing:SW decode, version with QSV HEVC target, AAC audio@96kbps
     # dxva2 decode, upload frames for QSV transform and encode.
     $ffmpegWMVBase = 'start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel dxva2 -c:v _codecReplace_ -i "srcPathReplace" -init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" -load_plugin hevc_hw -c:v hevc_qsv -b:v 600k -c:a aac -b:a 96k -y "' + $tgtPath + 'tgtPathReplace"'
+
+    #encode command is comprised of 3 pieces: decode, transform(resize), and encode.
+
 
     # The list of extensions that will be considered video files to write a statement for
     $vidExtensions = @('mkv','mp4','wmv','avi','mpg','flv','mov','vob','m4v')
@@ -88,6 +121,26 @@ function Get-FFMpeg-Cmd{
         Throw "Unable to get Top Level Directory"
     }
 
+
+    # Construct the base, filename tokenized ffmpeg command, according to whatever $mode says to use.
+    # FOR LATER: figure out where to designate the output format codec. Maybe here, maybe earlier?
+    switch ($mode){
+        "sw"{
+            # swDecode + swTransform + swEncode
+            $ffmpegcmd = $ffmpegBase + $swDecode + $inputFile + $swTransform + $swEncode + $outputFile
+        }
+        "hw"{
+            # hwDecode + hwTransform + hwEncode
+            $ffmpegcmd = $ffmpegBase + $hwDecode + $inputFile + $hwTransform + $hwEncode + $outputFile
+        }
+        "hybrid"{
+            # swDecode + hybridTransform + hwEncode
+            $ffmpegcmd = $ffmpegBase + $swDecode + $inputFile + $hybridTransform + $hwEncode + $outputFile
+        }
+        default{
+            # default to hw, since this is what the script was for originally.
+        }
+    }
     #Get-ChildItem -include ($vidExtensions) -recurse
     # process the TLDs
     # Write-Host "Folder Count:" $fldr
@@ -115,6 +168,9 @@ function Get-FFMpeg-Cmd{
                         catch {
                             Throw "It Broke"
                         }
+                        #
+                        # Get the information about the file via ffprobe
+                        #
                         # Generate transcode command statement, based on the file extension write it to the batch file
                         # specifically, WMVs have a different command to process with.
                         # Might add support later for HEVC or h.264 based on command line switch, for now, it's going to be hardcoding to the appropriate variable.
@@ -123,10 +179,10 @@ function Get-FFMpeg-Cmd{
                         {
                             "wmv"
                             {
+                                # change the input codec to wmv
                                 $transCode = $ffmpegWMVBase -Replace "srcPathReplace", $fileFullName
                                 #Write-Host "Transcode:$transcode"
-                                $ffprobeCmd = $ffprobeBase + $fileFullName
-                                $codec = Invoke-Expression $ffprobeCmd
+                                $srcCodec = Invoke-Expression $ffprobeCmd
                                 #Write-Host "Codec:$codec"
                                 switch ($codec){
                                     "wmv1"{
@@ -144,6 +200,12 @@ function Get-FFMpeg-Cmd{
                                     }
                                 }
                                 #$transCode = $transcode -Replace "srcPathReplace", $fileFullName
+                            }
+                            "mp4"
+                            {
+                                $ffprobeCmd = $ffprobeBase + $fileFullName
+                                $srcCodec = Invoke-Expression $ffprobeCmd
+                                $transCode = $ffmpegcmd
                             }
                             default
                             {
