@@ -143,6 +143,10 @@ function Get-FFMpeg-Cmd{
             $ffmpegcmd = $ffmpegBase + $hwDecode + $inputFile + $hwTransform + $hwEncode + $outputFile
         }
     }
+
+    #debug
+    Write-host 'Mode:'$mode
+    
     #Get-ChildItem -include ($vidExtensions) -recurse
     # process the TLDs
     # Write-Host "Folder Count:" $fldr
