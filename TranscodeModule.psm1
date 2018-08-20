@@ -81,7 +81,7 @@ function Get-FFMpeg-Cmd{
     [string]$hwDecode = '-hwaccel qsv -c:v h264_qsv '
     [string]$swTransform = '-vf "scale=640:360" '
     [string]$hwTransform = '-vf "scale_qsv=640:360" '
-    [string]$hybridTransform =  = '-init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" '
+    [string]$hybridTransform = '-init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" '
     [string]$swEncode = '-c:v libx264 -preset superfast -b:v 700k '
     # hardware encoding is currently locked to h264. Passed param handling needed, or values passed changed to ffmpeg values to allow changing it.
     [string]$hwEncode = '-c:v h264_qsv -b:v 700k '
@@ -139,6 +139,8 @@ function Get-FFMpeg-Cmd{
         }
         default{
             # default to hw, since this is what the script was for originally.
+            # hwDecode + hwTransform + hwEncode
+            $ffmpegcmd = $ffmpegBase + $hwDecode + $inputFile + $hwTransform + $hwEncode + $outputFile
         }
     }
     #Get-ChildItem -include ($vidExtensions) -recurse
