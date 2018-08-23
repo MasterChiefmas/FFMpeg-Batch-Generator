@@ -46,11 +46,8 @@ function Get-FFMpeg-Cmd{
     [string]$bitrate="700k"
     )
 
-    # if ($IsDebug -eq $true){
-    #   Write-Host "DEBUG"
-      Write-Host "Processing files in $ckPath"
-      Write-Host "EncodeMode:$mode"
-    # }
+    Write-Debug -Message "Processing files in $ckPath"
+    Write-Debug -Message "EncodeMode:$mode"
 
     # change to reading source file info via ffprobe
     # build concat decode and sw/hw decode based on that
@@ -114,16 +111,9 @@ function Get-FFMpeg-Cmd{
     $vidExtensions = @('mkv','mp4','wmv','avi','mpg','flv','mov','vob','m4v')
     [System.IO.FileInfo]$file
 
-    try {
-        $tld = Get-ChildItem $ckPath | sort-object
-    }
-    catch {
-        Throw "Unable to get Top Level Directory"
-    }
-
-
     # Construct the base, filename tokenized ffmpeg command, according to whatever $mode says to use.
     # FOR LATER: figure out where to designate the output format codec. Maybe here, maybe earlier?
+    # FOR LATER: Would this whole setup work better as an array or colleciton...things would get inserted in elements instead of search/replace
     switch ($mode){
         "sw"{
             # swDecode + swTransform + swEncode
@@ -145,112 +135,132 @@ function Get-FFMpeg-Cmd{
     }
 
     #debug
-    Write-host 'Mode:'$mode
+    Write-Debug -Message "Mode: $mode"
+    Write-Debug -Message "Cmd: $ffmpegcmd"
+
     
-    #Get-ChildItem -include ($vidExtensions) -recurse
-    # process the TLDs
-    # Write-Host "Folder Count:" $fldr
+    # Get the top level folder
+    Write-Debug -Message "Getting top level folder"
     try {
-        New-Item -Force .\transcode.bat
+        $tld = (Get-ChildItem $ckPath | sort-object)
+    }
+    catch {
+        "Unable to get Top Level Folder: $ckPath"
+    }
+
+    # Foreach ($item in $tld){
+    #     Write-Debug $item.FullName
+    # }
+
+    # #Get-ChildItem -include ($vidExtensions) -recurse
+    # # process the TLDs
+    # # Write-Host "Folder Count:" $fldr
+    try {
+        try {New-Item -Force .\transcode.bat}
+        catch{"Failed to create new transcode.bat"}
+        
         Foreach ($fldr in $tld){
-            Write-Host 'Processing item:' $fldr.Name
+            Write-Debug  -Message "Processing item: $fldr"
             try {
-                $files = Get-ChildItem -File -Recurse -LiteralPath $fldr.FullName
+                Write-Host "Processing " + $fldr.FullName
+                try {$files = Get-ChildItem -File -Recurse -LiteralPath $fldr.FullName}
+                catch {"Unable to get files from " + $fldr.FullName}
+    #             # Write-Debug -Message "Files count:" + $files.Count()
                 Foreach ($file in $files){
                     $fileFullName = $file.FullName.ToString()
-                    # Assumes a 3 character extension is present. It shouldn't matter if there isn't one.
-                    $fileExt = $fileFullName.Substring((($fileFullName.Length)-3), 3)
-                    if ($vidExtensions -match $fileExt){
-                        $IsVid = $true
-                    }
-                    else {
-                        $IsVid = $false
-                    }
-                    if (($IsVid) -and -not ($fileFullName -match 'sample')){
-                        # Exclude files with the word 'sample' in them
-                        try {
-                            $NewName = ${fldr}.BaseName.ToString().Trim() + ".mp4"
-                        }
-                        catch {
-                            Throw "It Broke"
-                        }
-                        #
-                        # Get the information about the file via ffprobe
-                        #
-                        # Generate transcode command statement, based on the file extension write it to the batch file
-                        # specifically, WMVs have a different command to process with.
-                        # Might add support later for HEVC or h.264 based on command line switch, for now, it's going to be hardcoding to the appropriate variable.
-                        # _codecReplace_
-                        switch ($fileExt)
-                        {
-                            "wmv"
-                            {
-                                # change the input codec to wmv
-                                $transCode = $ffmpegWMVBase -Replace "srcPathReplace", $fileFullName
-                                #Write-Host "Transcode:$transcode"
-                                $srcCodec = Invoke-Expression $ffprobeCmd
-                                #Write-Host "Codec:$codec"
-                                switch ($codec){
-                                    "wmv1"{
-                                        $transcode = $transcode -Replace "_codecReplace_", "wmv1"
-                                    }
-                                    "wmv2"{
-                                        $transcode = $transcode -Replace "_codecReplace_", "wmv2"
-                                    }
-                                    "wvm3"{
-                                        $transcode = $transcode -Replace "_codecReplace_", "wmv3"
-                                    }
-                                    default{
-                                        # assuming wmv3, probably a terrible idea...but whatever
-                                        $transcode = $transcode -Replace "_codecReplace_", "wmv3"
-                                    }
-                                }
-                                #$transCode = $transcode -Replace "srcPathReplace", $fileFullName
-                            }
-                            "mp4"
-                            {
-                                $ffprobeCmd = $ffprobeBase + $fileFullName
-                                $srcCodec = Invoke-Expression $ffprobeCmd
-                                $transCode = $ffmpegcmd
-                            }
-                            default
-                            {
-                                $transCode = $ffmpegBase -Replace "srcPathReplace", $fileFullName
-                            }
-                        }
-                        # if($fileExt -eq "wmv"){
-                        #     # process WMV
-                        #     $transCode = $ffmpegWMVBase -Replace "srcPathReplace", $fileFullName
-                        # }
-                        # $transCode = $ffmpegBase -Replace "srcPathReplace", $fileFullName
-                        # $transCodeSW = $ffmpeg_SW_Base -Replace "srcPathReplace", $fileFullName
-                        # $transcode = $transcode -Replace "tgtPathReplace", $NewName
-                        # $transCodeSW = $transCodeSW -Replace "tgtPathReplace", $NewName
-                        #                         if($fileExt -eq "wmv"){
-                        #                                 $transcode = $transcode -Replace "-c:a copy", "-c:a aac -b:a 128k"
-                        #                                 $transCodeSW = $transcode -Replace "-c:a copy", "-c:a aac -b:a 128k"
-                        #                         }
-                        $transcode = $transcode -Replace "tgtPathReplace", $NewName
-                        'time /t'  | out-file transcode.bat -Encoding ascii -Append
-                        $transcode | out-file transcode.bat -Encoding ascii -Append
-                        'time /t'  | out-file transcode.bat -Encoding ascii -Append
-                        # $transCodeSW | out-file transcodeSW.bat -Encoding ascii -Append
-                    }
-                    else {
-                        Write-Host "Skipping $fileFullName"
-                        continue
-                    }
+                    Write-Debug $fileFullName
+    #                 # Assumes a 3 character extension is present. It shouldn't matter if there isn't one.
+    #                 $fileExt = $fileFullName.Substring((($fileFullName.Length)-3), 3)
+    #                 if ($vidExtensions -match $fileExt){
+    #                     $IsVid = $true
+    #                 }
+    #                 else {
+    #                     $IsVid = $false
+    #                 }
+    #                 if (($IsVid) -and -not ($fileFullName -match 'sample')){
+    #                     # Exclude files with the word 'sample' in them
+    #                     try {
+    #                         $NewName = ${fldr}.BaseName.ToString().Trim() + ".mp4"
+    #                     }
+    #                     catch {
+    #                         Throw "It Broke"
+    #                     }
+    #                     #
+    #                     # Get the information about the file via ffprobe
+    #                     #
+    #                     # Generate transcode command statement, based on the file extension write it to the batch file
+    #                     # specifically, WMVs have a different command to process with.
+    #                     # Might add support later for HEVC or h.264 based on command line switch, for now, it's going to be hardcoding to the appropriate variable.
+    #                     # _codecReplace_
+    #                     switch ($fileExt)
+    #                     {
+    #                         "wmv"
+    #                         {
+    #                             # change the input codec to wmv
+    #                             $transCode = $ffmpegWMVBase -Replace "srcPathReplace", $fileFullName
+    #                             #Write-Host "Transcode:$transcode"
+    #                             $srcCodec = Invoke-Expression $ffprobeCmd
+    #                             #Write-Host "Codec:$codec"
+    #                             switch ($codec){
+    #                                 "wmv1"{
+    #                                     $transcode = $transcode -Replace "_codecReplace_", "wmv1"
+    #                                 }
+    #                                 "wmv2"{
+    #                                     $transcode = $transcode -Replace "_codecReplace_", "wmv2"
+    #                                 }
+    #                                 "wvm3"{
+    #                                     $transcode = $transcode -Replace "_codecReplace_", "wmv3"
+    #                                 }
+    #                                 default{
+    #                                     # assuming wmv3, probably a terrible idea...but whatever
+    #                                     $transcode = $transcode -Replace "_codecReplace_", "wmv3"
+    #                                 }
+    #                             }
+    #                             #$transCode = $transcode -Replace "srcPathReplace", $fileFullName
+    #                         }
+    #                         "mp4"
+    #                         {
+    #                             $ffprobeCmd = $ffprobeBase + $fileFullName
+    #                             $srcCodec = Invoke-Expression $ffprobeCmd
+    #                             $transCode = $ffmpegcmd
+    #                         }
+    #                         default
+    #                         {
+    #                             $transCode = $ffmpegBase -Replace "srcPathReplace", $fileFullName
+    #                         }
+    #                     }
+    #                     # if($fileExt -eq "wmv"){
+    #                     #     # process WMV
+    #                     #     $transCode = $ffmpegWMVBase -Replace "srcPathReplace", $fileFullName
+    #                     # }
+    #                     # $transCode = $ffmpegBase -Replace "srcPathReplace", $fileFullName
+    #                     # $transCodeSW = $ffmpeg_SW_Base -Replace "srcPathReplace", $fileFullName
+    #                     # $transcode = $transcode -Replace "tgtPathReplace", $NewName
+    #                     # $transCodeSW = $transCodeSW -Replace "tgtPathReplace", $NewName
+    #                     #                         if($fileExt -eq "wmv"){
+    #                     #                                 $transcode = $transcode -Replace "-c:a copy", "-c:a aac -b:a 128k"
+    #                     #                                 $transCodeSW = $transcode -Replace "-c:a copy", "-c:a aac -b:a 128k"
+    #                     #                         }
+    #                     $transcode = $transcode -Replace "tgtPathReplace", $NewName
+    #                     'time /t'  | out-file transcode.bat -Encoding ascii -Append
+    #                     $transcode | out-file transcode.bat -Encoding ascii -Append
+    #                     'time /t'  | out-file transcode.bat -Encoding ascii -Append
+    #                     # $transCodeSW | out-file transcodeSW.bat -Encoding ascii -Append
+    #                 }
+    #                 else {
+    #                     Write-Host "Skipping $fileFullName"
+    #                     continue
+    #                 }
                 }
 
-            }
+                }
             catch {
-                Throw "No files? $fldr.BaseName:$files.Length"
+                 "No files? " + $fldr.BaseName + ":" + $files.Length
             }
         }
     }
     catch {
-        Throw "Folder Loop broke on $fldr"
-        Continue
+        "Folder Loop broke on $fldr at line " + $_.InvocationInfo.ScriptLineNumber
     }
 
 }
