@@ -169,22 +169,23 @@ function Get-FFMpeg-Cmd{
                 Foreach ($file in $files){
                     $fileFullName = $file.FullName.ToString()
                     Write-Debug $fileFullName
-    #                 # Assumes a 3 character extension is present. It shouldn't matter if there isn't one.
-    #                 $fileExt = $fileFullName.Substring((($fileFullName.Length)-3), 3)
-    #                 if ($vidExtensions -match $fileExt){
-    #                     $IsVid = $true
-    #                 }
-    #                 else {
-    #                     $IsVid = $false
-    #                 }
-    #                 if (($IsVid) -and -not ($fileFullName -match 'sample')){
-    #                     # Exclude files with the word 'sample' in them
-    #                     try {
-    #                         $NewName = ${fldr}.BaseName.ToString().Trim() + ".mp4"
-    #                     }
-    #                     catch {
-    #                         Throw "It Broke"
-    #                     }
+                    # Assumes a 3 character extension is present. It shouldn't matter if there isn't one.
+                    $fileExt = $fileFullName.Substring((($fileFullName.Length)-3), 3)
+                    if ($vidExtensions -match $fileExt){
+                        $IsVid = $true
+                    }
+                    else {
+                        $IsVid = $false
+                    }
+                    Write-Debug "Isvid? $IsVid"
+                    if (($IsVid) -and -not ($fileFullName -match 'sample')){
+                        # Exclude files with the word 'sample' in them
+                        try {
+                            $NewName = ${fldr}.BaseName.ToString().Trim() + ".mp4"
+                        }
+                        catch {
+                            "It Broke"
+                        }
     #                     #
     #                     # Get the information about the file via ffprobe
     #                     #
@@ -192,65 +193,75 @@ function Get-FFMpeg-Cmd{
     #                     # specifically, WMVs have a different command to process with.
     #                     # Might add support later for HEVC or h.264 based on command line switch, for now, it's going to be hardcoding to the appropriate variable.
     #                     # _codecReplace_
-    #                     switch ($fileExt)
-    #                     {
-    #                         "wmv"
-    #                         {
-    #                             # change the input codec to wmv
-    #                             $transCode = $ffmpegWMVBase -Replace "srcPathReplace", $fileFullName
-    #                             #Write-Host "Transcode:$transcode"
-    #                             $srcCodec = Invoke-Expression $ffprobeCmd
-    #                             #Write-Host "Codec:$codec"
-    #                             switch ($codec){
-    #                                 "wmv1"{
-    #                                     $transcode = $transcode -Replace "_codecReplace_", "wmv1"
-    #                                 }
-    #                                 "wmv2"{
-    #                                     $transcode = $transcode -Replace "_codecReplace_", "wmv2"
-    #                                 }
-    #                                 "wvm3"{
-    #                                     $transcode = $transcode -Replace "_codecReplace_", "wmv3"
-    #                                 }
-    #                                 default{
-    #                                     # assuming wmv3, probably a terrible idea...but whatever
-    #                                     $transcode = $transcode -Replace "_codecReplace_", "wmv3"
-    #                                 }
-    #                             }
+                        switch ($fileExt)
+                        {
+                            "wmv"
+                            {
+                                Write-Debug -Message "Processing as wmv"
+                                # change the input codec to wmv
+                                $transCode = $ffmpegWMVBase -Replace "srcPathReplace", $fileFullName
+                                #Write-Host "Transcode:$transcode"
+                                $srcCodec = Invoke-Expression $ffprobeCmd
+                                #Write-Host "Codec:$codec"
+                                # --- Old WMV Processing Code
+                                # if($fileExt -eq "wmv"){
+                                #     # process WMV
+                                #     $transCode = $ffmpegWMVBase -Replace "srcPathReplace", $fileFullName
+                                # }
+                                # $transCode = $ffmpegBase -Replace "srcPathReplace", $fileFullName
+                                # $transCodeSW = $ffmpeg_SW_Base -Replace "srcPathReplace", $fileFullName
+                                # $transcode = $transcode -Replace "tgtPathReplace", $NewName
+                                # $transCodeSW = $transCodeSW -Replace "tgtPathReplace", $NewName
+                                #                         if($fileExt -eq "wmv"){
+                                #                                 $transcode = $transcode -Replace "-c:a copy", "-c:a aac -b:a 128k"
+                                #                                 $transCodeSW = $transcode -Replace "-c:a copy", "-c:a aac -b:a 128k"
+                                #                         }
+                                # /--- Old WMV Processing Code
+                                $transcode = $transcode -Replace "tgtPathReplace", $NewName
+                                'time /t'  | out-file transcode.bat -Encoding ascii -Append
+                                $transcode | out-file transcode.bat -Encoding ascii -Append
+                                'time /t'  | out-file transcode.bat -Encoding ascii -Append
+                                # $transCodeSW | out-file transcodeSW.bat -Encoding ascii -Append
+                                switch ($codec){
+                                    "wmv1"{
+                                        Write-Debug -Message "Set WMV type to 1"
+                                        $transcode = $transcode -Replace "_codecReplace_", "wmv1"
+                                    }
+                                    "wmv2"{
+                                        Write-Debug -Message "Set WMV type to 2"
+                                        $transcode = $transcode -Replace "_codecReplace_", "wmv2"
+                                    }
+                                    "wvm3"{
+                                        Write-Debug -Message "Set WMV type to 3"
+                                        $transcode = $transcode -Replace "_codecReplace_", "wmv3"
+                                    }
+                                    default{
+                                        # assuming wmv3, probably a terrible idea...but whatever
+                                        Write-Debug -Message "*Defaulting WMV type to 3"
+                                        $transcode = $transcode -Replace "_codecReplace_", "wmv3"
+                                    }
+                                }
     #                             #$transCode = $transcode -Replace "srcPathReplace", $fileFullName
-    #                         }
-    #                         "mp4"
-    #                         {
+                            }
+                            "mp4"
+                            {
+                                Write-Debug -Message "Processing as mp4"
     #                             $ffprobeCmd = $ffprobeBase + $fileFullName
     #                             $srcCodec = Invoke-Expression $ffprobeCmd
     #                             $transCode = $ffmpegcmd
-    #                         }
-    #                         default
-    #                         {
-    #                             $transCode = $ffmpegBase -Replace "srcPathReplace", $fileFullName
-    #                         }
-    #                     }
-    #                     # if($fileExt -eq "wmv"){
-    #                     #     # process WMV
-    #                     #     $transCode = $ffmpegWMVBase -Replace "srcPathReplace", $fileFullName
-    #                     # }
-    #                     # $transCode = $ffmpegBase -Replace "srcPathReplace", $fileFullName
-    #                     # $transCodeSW = $ffmpeg_SW_Base -Replace "srcPathReplace", $fileFullName
-    #                     # $transcode = $transcode -Replace "tgtPathReplace", $NewName
-    #                     # $transCodeSW = $transCodeSW -Replace "tgtPathReplace", $NewName
-    #                     #                         if($fileExt -eq "wmv"){
-    #                     #                                 $transcode = $transcode -Replace "-c:a copy", "-c:a aac -b:a 128k"
-    #                     #                                 $transCodeSW = $transcode -Replace "-c:a copy", "-c:a aac -b:a 128k"
-    #                     #                         }
-    #                     $transcode = $transcode -Replace "tgtPathReplace", $NewName
-    #                     'time /t'  | out-file transcode.bat -Encoding ascii -Append
-    #                     $transcode | out-file transcode.bat -Encoding ascii -Append
-    #                     'time /t'  | out-file transcode.bat -Encoding ascii -Append
-    #                     # $transCodeSW | out-file transcodeSW.bat -Encoding ascii -Append
-    #                 }
-    #                 else {
-    #                     Write-Host "Skipping $fileFullName"
-    #                     continue
-    #                 }
+                            }
+                            default
+                            {
+                                Write-Debug -Message "Processing as default"
+                                $transCode = $ffmpegBase -Replace "srcPathReplace", $fileFullName
+                            }
+                        }
+                    }
+                    else {
+                        # Vid had sample in the name, or doesn't have an allowed extension
+                        Write-Host "Skipping $fileFullName"
+                        continue
+                    }
                 }
 
                 }
