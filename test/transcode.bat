@@ -1,3 +1,18 @@
 time /t
-start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel dxva2 -c:v _codecReplace_ -i "C:\Users\j.coleman\OneDrive\GitHub\FFMpeg-Batch-Generator\test\fldr2\file\randomfile2.wmv" -init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" -load_plugin hevc_hw -c:v hevc_qsv -b:v 600k -c:a aac -b:a 96k -y "\\fs2\poolroot\croco\!recodes\fldr2.mp4"
+start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel qsv -c:v h264_qsv -i C:\Users\j.coleman\OneDrive\GitHub\FFMpeg-Batch-Generator\test\mkv1\file\mkvtest1.mkv -vf "scale_qsv=640:360" -b:v 700k -c:v h264_qsv -c:a copy "\\fs2\poolroot\croco\!recodes\mkv1.mp4"
+time /t
+time /t
+start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel qsv -c:v h264_qsv -i C:\Users\j.coleman\OneDrive\GitHub\FFMpeg-Batch-Generator\test\mp4file\file\mp4test.mp4 -vf "scale_qsv=640:360" -b:v 700k -c:v h264_qsv -c:a copy "\\fs2\poolroot\croco\!recodes\mp4file.mp4"
+time /t
+time /t
+start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel qsv -c:v h264_qsv -i C:\Users\j.coleman\OneDrive\GitHub\FFMpeg-Batch-Generator\test\wmv1\file\test.mp4 -vf "scale_qsv=640:360" -b:v 700k -c:v h264_qsv -c:a copy "\\fs2\poolroot\croco\!recodes\wmv1.mp4"
+time /t
+time /t
+start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel qsv -c v:wmv1 -i C:\Users\j.coleman\OneDrive\GitHub\FFMpeg-Batch-Generator\test\wmv1\file\wmv1_test.wmv -vf "scale_qsv=640:360" -b:v 700k -c:v h264_qsv -c:a aac -b:a 96k "\\fs2\poolroot\croco\!recodes\wmv1.mp4"
+time /t
+time /t
+start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel qsv -c v:wmv2 -i C:\Users\j.coleman\OneDrive\GitHub\FFMpeg-Batch-Generator\test\wmv2\file\wmv2_test.wmv -vf "scale_qsv=640:360" -b:v 700k -c:v h264_qsv -c:a aac -b:a 96k "\\fs2\poolroot\croco\!recodes\wmv2.mp4"
+time /t
+time /t
+start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel qsv -c:v h264_qsv -i C:\Users\j.coleman\OneDrive\GitHub\FFMpeg-Batch-Generator\test\wmv3\wmv3_test.wmv -vf "scale_qsv=640:360" -b:v 700k -c:v h264_qsv -c:a copy "\\fs2\poolroot\croco\!recodes\wmv3.mp4"
 time /t
