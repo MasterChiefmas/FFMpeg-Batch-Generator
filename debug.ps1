@@ -1,4 +1,4 @@
 $DebugPreference = "Continue"
 Import-Module -Force .\TranscodeModule.psm1
-cd .\test
+Set-Location .\test
 Get-FFMpeg-Cmd

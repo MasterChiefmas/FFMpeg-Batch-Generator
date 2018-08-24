@@ -184,7 +184,7 @@ function Get-FFMpeg-Cmd{
                             $NewName = ${fldr}.BaseName.ToString().Trim() + ".mp4"
                         }
                         catch {
-                            "It Broke"
+                            "Unable to set the output file name"
                         }
     #                     #
     #                     # Get the information about the file via ffprobe
@@ -193,6 +193,8 @@ function Get-FFMpeg-Cmd{
     #                     # specifically, WMVs have a different command to process with.
     #                     # Might add support later for HEVC or h.264 based on command line switch, for now, it's going to be hardcoding to the appropriate variable.
     #                     # _codecReplace_
+                        # Still need handling for things that are more likely to have formats other then h.264 and wmv
+                        # i.e. mpg, flv, avi, and vob
                         switch ($fileExt)
                         {
                             "wmv"
@@ -201,8 +203,11 @@ function Get-FFMpeg-Cmd{
                                 # change the input codec to wmv
                                 $transCode = $ffmpegWMVBase -Replace "srcPathReplace", $fileFullName
                                 #Write-Host "Transcode:$transcode"
+                                $ffprobeCmd = $ffprobeBase + $fileFullName
                                 $srcCodec = Invoke-Expression $ffprobeCmd
-                                #Write-Host "Codec:$codec"
+                                # $transCode = $ffmpegcmd
+                                # $srcCodec = Invoke-Expression $ffprobeCmd
+                                Write-Debug "Codec:$srcCodec"
                                 # --- Old WMV Processing Code
                                 # if($fileExt -eq "wmv"){
                                 #     # process WMV
