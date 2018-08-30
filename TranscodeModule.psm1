@@ -294,7 +294,7 @@ function Get-FFMpeg-Cmd{
                                     default{
                                         $arrStrCmd[1] += '-c:v h264_qsv '
                                     }
-                                }
+                                }?
                                 # audio out
                                 $arrStrCmd[5] = '-c:a copy '
                             }
