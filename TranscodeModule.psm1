@@ -165,7 +165,7 @@ function Get-FFMpeg-Cmd{
             try {
                 Write-Host "Processing " $fldr.FullName
                 try {$files = Get-ChildItem -File -Recurse -LiteralPath $fldr.FullName}
-                catch {"Unable to get files from " + $fldr.FullName}
+                catch {Write-Host "Unable to get files from " + $fldr.FullName}
                 # Write-Debug -Message "Files count:" + $files.Count()
             
                 Foreach ($file in $files){
