@@ -139,7 +139,7 @@ Foreach ($thing in $tld){
         Write-Host -ForegroundColor Green "Processing $thing as a folder..."
         try {
             # Get video files from the current folder
-            $files = Get-ChildItem -File -Recurse -Include "*.mkv","*.mp4","*.avi","*.mpeg","*.mov","*.m4v","*.flv","*.wmv" "$thing"
+            $files = Get-ChildItem -File -Recurse -Include "*.mkv","*.mp4","*.avi","*.mpeg","*.mov","*.m4v","*.flv","*.wmv"
 
 			# Log any folders that had more then 1 video file
 			If ($files.Count -ge 2) {
@@ -162,6 +162,9 @@ Foreach ($thing in $tld){
                 }
                 # Processing video file
                 If((IsVidType($file)) -eq $true){
+                    # Get the vertical res of the file.
+                    # Note: I don't know why, but this comes back as an array with 4 elements.
+                    # The res is actually in the last element.
                     $VidRes = GetVidRes($file.FullName)
                     Write-Debug -Message ($file.FullName + " is "+$VidRes+" pixels high")
                     # save the extension.
@@ -176,7 +179,7 @@ Foreach ($thing in $tld){
                         $CleanName = $thing.Name
                     }
                     
-                    Switch ($VidRes){
+                    Switch ($VidRes[3]){
                         {$_ -le 480}{
                             Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '480\' + $CleanName + '.' + $extension)
                             ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '480\' + $CleanName + '.' + $extension + '"') | Out-File process.ps1 -Encoding ascii -Append
