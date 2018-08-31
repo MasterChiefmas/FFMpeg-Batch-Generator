@@ -133,7 +133,6 @@ function Get-FFMpeg-Cmd{
     # FOR LATER: figure out where to designate the output format codec. Maybe here, maybe earlier?
 
     #debug
-    Write-Debug -Message "Mode: $mode"
     Write-Debug -Message "Cmd: $ffmpegcmd"
 
 
@@ -155,22 +154,22 @@ function Get-FFMpeg-Cmd{
     # # Write-Host "Folder Count:" $fldr
     try {
         try {
-            #New-Item -Force .\transcode.bat
-            #"" | Out-File .\transcode.bat -Encoding ascii -Append
+            New-Item -Force .\transcode.bat
+            "" | Out-File .\transcode.bat -Encoding ascii -Append
         }
         catch{"Failed to create new transcode.bat"}
 
-        Foreach ($fldr in $tld){
-            Write-Debug  -Message "Processing item: $fldr"
+        Foreach ($thing in $tld){
+            Write-Debug  -Message "Processing item: $thing"
             try {
                 Write-Host "Processing " $fldr.FullName
-                try {$files = Get-ChildItem -File -Recurse -LiteralPath $fldr.FullName}
-                catch {Write-Host "Unable to get files from " + $fldr.FullName}
+                try {$files = Get-ChildItem -File -Recurse -LiteralPath $thing.FullName}
+                catch {Write-Host "Unable to get files from " + $thing.FullName}
                 # Write-Debug -Message "Files count:" + $files.Count()
             
                 Foreach ($file in $files){
                     $fileFullName = $file.FullName.ToString()
-                    Write-Debug $fileFullName
+                    Write-Debug -Message "fileFullName: $fileFullName"
                     # Reset the base values based on the mode. This isn't optimal doing it hear, but I kinda pooched op the process and I don't want to fix it now.
                     switch ($mode){
                         "sw"{
@@ -232,8 +231,9 @@ function Get-FFMpeg-Cmd{
                         # Exclude files with the word 'sample' in them
                         try {
                             # Set the output file
-                            $arrStrCmd[6] = '"' + $tgtPath + ${fldr}.BaseName.ToString().Trim() + '.mp4"'
-                            $NewName = ${fldr}.BaseName.ToString().Trim() + ".mp4"
+                            $arrStrCmd[6] = '"' + $tgtPath + $thing.BaseName.ToString().Trim() + '.mp4"'
+                            $NewName = $thing.BaseName.ToString().Trim() + ".mp4"
+                            Write-Debug -Message "NewName: $NewName"
                         }
                         catch {
                             "Unable to set the output file name"
@@ -250,7 +250,9 @@ function Get-FFMpeg-Cmd{
 
                         # look at the file, configure decode based on what ffprobe says about it.
                         $ffprobeCmd = $ffprobeBase + $fileFullName
+                        Write-Debug -Message "ffprobecmd: $ffprobeCmd"
                         $srcCodec = Invoke-Expression $ffprobeCmd
+                        Write-Debug -Message "srcCodec: $srcCodec"
 
                         switch ($srcCodec)
                         {
@@ -294,7 +296,7 @@ function Get-FFMpeg-Cmd{
                                     default{
                                         $arrStrCmd[1] += '-c:v h264_qsv '
                                     }
-                                }?
+                                }
                                 # audio out
                                 $arrStrCmd[5] = '-c:a copy '
                             }
