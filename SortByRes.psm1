@@ -142,7 +142,7 @@ Foreach ($thing in $tld){
             $files = Get-ChildItem -File -Recurse -Include "*.mkv","*.mp4","*.avi","*.mpeg","*.mov","*.m4v","*.flv","*.wmv" $thing
 
 			# Log any folders that had more then 1 video file
-			If ($files.Count -ge 2) {
+			If ($files.Count -ge 3) {
 				('Move-Item "' + $thing.FullName + '" "' + $tgtPath + 'MultiVideoFolders\' + '"') | Out-File MultiVideoFolderList.ps1 -Encoding ascii -Append
 			}
 
