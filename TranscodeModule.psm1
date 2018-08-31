@@ -79,7 +79,17 @@ function Get-FFMpeg-Cmd{
     [string]$swTransform = '-vf "scale=640:360" '
     [string]$hwTransform = '-vf "scale_qsv=640:360" '
     [string]$hybridTransform = '-init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" '
+    # Confiig values for all WMV, cause WMV is annoying to work with
+    [string]$WMVTransform = '-init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" '
+    # 1 per type, it's a bit wasteful in a way, but it's less annoying then search/replace all the time just for the codec.
+    [string]$WMVDecode1 = '-hwaccel qsv -c:v wmv1 '
+    [string]$WMVDecode2 = '-hwaccel qsv -c:v wmv2 '
+    [string]$WMVDecode3 = '-hwaccel qsv -c:v wmv3 '
+    [string]$WMVEncodeVid = '-b:v 700k -c:v h264_qsv '
+    [string]$WMVEncodeAud = '-c:a aac -b:a 96k '
     [string]$swEncode = '-c:v libx264 -preset superfast -b:v 700k '
+    [string]$AudioEncode = ' -c:a aac -b:a 96k '
+    [string]$AudioCopy = ' -c:a copy '
     # hardware encoding is currently locked to h264. Passed param handling needed, or values passed changed to ffmpeg values to allow changing it.
     [string]$hwEncode = '-c:v h264_qsv -b:v 700k '
     [string]$ffmpegcmd = ''
@@ -122,6 +132,8 @@ function Get-FFMpeg-Cmd{
     # dxva2 decode, upload frames for QSV transform and encode.
     $ffmpegWMVBase = 'start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel dxva2 -c:v _codecReplace_ -i "srcPathReplace" -init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" -load_plugin hevc_hw -c:v hevc_qsv -b:v 600k -c:a aac -b:a 96k -y "' + $tgtPath + 'tgtPathReplace"'
 
+    # WMV base (used for everything)
+    # c:\ffmpeg\ffmpeg.exe -hwaccel qsv -c:v wmv3 -i input.wmv -init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" -b:v 700k -c:v h264_qsv -c:a aac -b:a 96k -y "output.mp4"
     #encode command is comprised of 3 pieces: decode, transform(resize), and encode.
 
 
@@ -199,7 +211,7 @@ function Get-FFMpeg-Cmd{
                             # input codec
                             $arrStrCmd[1] = ' -hwaccel dxva2 threads 1 '
                             # scaling
-                            $arrStrCmd[3] = '-init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" '
+                            $arrStrCmd[3] = $hybridTransform
                             # output codec
                             $arrStrCmd[4] = '-load_plugin hevc_hw -b:v 700k -c:v h264_qsv '
                         }
@@ -208,18 +220,21 @@ function Get-FFMpeg-Cmd{
                             # hwDecode + hwTransform + hwEncode
                             $ffmpegcmd = $ffmpegBase + $hwDecode + $inputFile + $hwTransform + $hwEncode + $outputFile
                             # input codec
-                            $arrStrCmd[1] = '-hwaccel dxva2 threads 1 -hwaccel_output_format dxva2_vld '
+                            $arrStrCmd[1] = '-hwaccel dxva2 -threads 1 -hwaccel_output_format dxva2_vld '
                             # scaling
                             $arrStrCmd[3] = '-vf "hwmap=derive_device=qsv,format=qsv,scale_qsv=640:360" '
                             # output codec
-                            $arrStrCmd[4] = '-b:v 700k -c:v h264_qsv '
+                            $arrStrCmd[4] = '-c:v h264_qsv -b:v 700k '
                         }
                     }
                     # Set the input file
                     $arrStrCmd[2] = "-i $fileFullName "
 
+
                     # Assumes a 3 character extension is present. It shouldn't matter if there isn't one.
-                    $fileExt = $fileFullName.Substring((($fileFullName.Length)-3), 3)
+                    #$fileExt = $fileFullName.Substring((($fileFullName.Length)-3), 3)
+                    # save the extension.
+                    $fileExt = ($fileFullName.Substring(($fileFullName.ToString()).IndexOf(".")+1))
                     if ($vidExtensions -match $fileExt){
                         $IsVid = $true
                     }
@@ -258,29 +273,30 @@ function Get-FFMpeg-Cmd{
                         {
                             "wmv1"{
                                 Write-Debug -Message "Set WMV type to 1"
-                                $transcode = $transcode -Replace "_codecReplace_", "wmv1"
+                                #$transcode = $transcode -Replace "_codecReplace_", "wmv1"
 
                                 #video in
-                                $arrStrCmd[1] += '-c v:wmv1 '
+                                $arrStrCmd[1] = $WMVDecode1
                                 # audio out
-                                $arrStrCmd[5] = '-c:a aac -b:a 96k '
+                                $arrStrCmd[5] = $AudioEncode
 
                             }
                             "wmv2"{
                                 Write-Debug -Message "Set WMV type to 2"
-                                $transcode = $transcode -Replace "_codecReplace_", "wmv2"
+                                #$transcode = $transcode -Replace "_codecReplace_", "wmv2"
                                 #video in
-                                $arrStrCmd[1] += '-c v:wmv2 '
+                                $arrStrCmd[1] = $WMVDecode2
                                 # audio out
-                                $arrStrCmd[5] = '-c:a aac -b:a 96k '
+                                $arrStrCmd[5] = $AudioEncode
                             }
                             "wvm3"{
                                 Write-Debug -Message "Set WMV type to 3"
-                                $transcode = $transcode -Replace "_codecReplace_", "wmv3"
+                                #$transcode = $transcode -Replace "_codecReplace_", "wmv3"
                                 #video in
-                                $arrStrCmd[1] += '-c v:wmv3 '
+                                $arrStrCmd[1] = $WMVDecode3
                                 # audio out
-                                $arrStrCmd[5] = '-c:a aac -b:a 96k '
+                                $arrStrCmd[5] = $AudioEncode
+
                             }
                             "h264"
                             {
@@ -288,27 +304,28 @@ function Get-FFMpeg-Cmd{
                                 # video in
                                 switch ($mode){
                                     "hw"{
-                                        $arrStrCmd[1] += '-c:v h264_qsv '
+                                        $arrStrCmd[1] = $hwDecode
+                                        $arrStrCmd[5] = $AudioCopy
                                     }
                                     "sw"{
-                                        $arrStrCmd[1] += '-c:v h264 '
+                                        $arrStrCmd[1] = $swDecode
+                                        $arrStrCmd[5] = $AudioCopy
                                     }
                                     default{
-                                        $arrStrCmd[1] += '-c:v h264_qsv '
+                                        $arrStrCmd[1] = $hwDecode
+                                        $arrStrCmd[5] = $AudioCopy
                                     }
                                 }
-                                # audio out
-                                $arrStrCmd[5] = '-c:a copy '
                             }
                             default
                             {
                                 # cop-out case, set everything to dxva2+h264 and hope for the best?
                                 Write-Debug -Message "Processing as default"
-                                $transCode = $ffmpegBase -Replace "srcPathReplace", $fileFullName
+                                # $transCode = $ffmpegBase -Replace "srcPathReplace", $fileFullName
                                 # video in
-                                $arrStrCmd[1] += '-c:v h264_qsv '
+                                $arrStrCmd[1] = $hwDecode
                                 # audio out
-                                $arrStrCmd[5] = '-c:a copy '
+                                $arrStrCmd[5] = $AudioCopy
                             }
                         }
 
