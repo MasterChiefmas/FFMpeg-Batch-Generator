@@ -13,16 +13,18 @@ function GetVidRes{
     [string]$ffprobeSwitches = ' -v error -show_entries stream=height -of default=noprint_wrappers=1:nokey=1 '
     [string]$ffprobeCmd
     $frameHeight
+    $tmpStr
 
     # Someday, I should check to be sure ffprobe.exe exists
 
     If ($target -eq $null){
         Write-Host -ForegroundColor Yellow "A file path is required."
-        return 0
+        return "0"
     }
     else{
-        $ffprobeCmd = $ffprobe + $ffprobeSwitches + $target
+        $ffprobeCmd = $ffprobe + $ffprobeSwitches + '"' + $target + '"'
         $frameHeight = Invoke-Expression $ffprobeCmd
+        Write-Debug -Message ("tmpStr:" + $tmpStr.GetType())
         Write-Debug -Message ("GetVidRes:"+$target+" has a frame height of " + $frameHeight)
         return $frameHeight
     }
@@ -64,7 +66,9 @@ function SortByRes{
     )
 
     
-$tgtPath = '\\fs2\poolroot\croco\!SortedByResolution\'
+$tgtPath = '\\fs2fast\poolroot\croco\!SortedByResolution\'
+$processedPath = '\\fs2fast\poolroot\croco\!Processed\'
+
 #$SortResolutions = @(480,720,1080)
 $tld
 [bool]$IsVid
@@ -96,13 +100,23 @@ catch {
     Exit
 }
 
-# Establish the batch file to store the processing commands...
+# Establish the script file to store the processing commands...
 try {
-    New-Item -Force .\process.bat
-    "" | Out-File .\process.bat -Encoding ascii -Append
+    New-Item -Force .\process.ps1
+    "" | Out-File .\process.ps1 -Encoding ascii -Append
 }
 catch {
-    Write-Debug -Message "Unable to setup process.bat"
+    Write-Debug -Message "Unable to setup process.ps1"
+    Exit
+}
+
+# Establish the script file to store the folder cleanup commands...
+try {
+    New-Item -Force .\CleanUp.ps1
+    "" | Out-File .\CleanUp.ps1 -Encoding ascii -Append
+}
+catch {
+    Write-Debug -Message "Unable to setup process.ps1"
     Exit
 }
 #### /Startup Checks ####
@@ -126,7 +140,15 @@ Foreach ($thing in $tld){
         # Set base file name from folder name, look in subfolders for videos
         Write-Host -ForegroundColor Green "Processing $thing as a folder..."
         try {
-            $files = Get-ChildItem -File -Recurse -LiteralPath $thing.FullName
+            $files = Get-ChildItem -File -Recurse -Include "*.mkv","*.mp4","*.avi","*.mpeg","*.mov","*.m4v","*.flv","*.wmv" "$thing"
+			# Log any folders that had more then 1 video file
+			If ($files.Count -ge 2) {
+				('Move-Item "' + $thing.FullName + '" "' + $tgtPath + 'MultiVideoFolders\' + $thing.name + '"') | Out-File MultiVideoFolderList.ps1 -Encoding ascii -Append
+			}
+			# Skip if there's 3 or more video files (2 files may just be a sample video)
+			If ($files.Count -ge 3) {
+				continue
+			}
             foreach ($file in $files){
                 # Skip if 'sample' is in the name
                 If ($file.FullName -match 'sample'){
@@ -139,25 +161,25 @@ Foreach ($thing in $tld){
                     Write-Debug -Message ($file.FullName + " is "+$VidRes+" pixels high")
                     # save the extension.
                     $extension = ($file.Name.ToString()).Substring(($file.Name.ToString()).IndexOf(".")+1)
-                    Switch ($VidRes){
+                    Switch ($VidRes[2]){
                         {$_ -le 480}{
                             Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '480\' + $thing.name + '.' + $extension)
-                            ('Move-Item ''' + $file.FullName + ''' ''' + $tgtPath + '480\' + $thing.name + '.' + $extension + '''') | Out-File process.bat -Encoding ascii -Append
+                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '480\' + $thing.name + '.' + $extension + '"') | Out-File process.ps1 -Encoding ascii -Append
                             Break
                         }
                         {$_ -gt 480 -and $_ -le 720}{
                             Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '720\' + $thing.name + '.' + $extension)
-                            ('Move-Item ''' + $file.FullName + ''' ''' + $tgtPath + '720\' + $thing.name + '.' + $extension + '''') | Out-File process.bat -Encoding ascii -Append
+                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '720\' + $thing.name + '.' + $extension + '"') | Out-File process.ps1 -Encoding ascii -Append
                             Break
                         }
                         {$_ -gt 720 -and $_ -le 1080}{
                             Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '1080\' + $thing.name + '.' + $extension)
-                            ('Move-Item ''' + $file.FullName + ''' ''' + $tgtPath + '1080\' + $thing.name + '.' + $extension + '''') | Out-File process.bat -Encoding ascii -Append
+                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '1080\' + $thing.name + '.' + $extension + '"') | Out-File process.ps1 -Encoding ascii -Append
                             Break
                         }
                         {$_ -gt 1080}{
                             Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '2160\' + $thing.name + '.' + $extension)
-                            ('Move-Item ''' + $file.FullName + ''' ''' + $tgtPath + '4K\' + $thing.name + '.' + $extension + '''') | Out-File process.bat -Encoding ascii -Append
+                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '2160\' + $thing.name + '.' + $extension + '"') | Out-File process.ps1 -Encoding ascii -Append
                             Break
                         }
                         default {
@@ -185,22 +207,22 @@ Foreach ($thing in $tld){
             Switch ($VidRes){
                 {$_ -le 480}{
                     Write-Debug -Message ('Move-Item ' + $thing.FullName + ' ' + $tgtPath + '480\' + $thing.name)
-                    ('Move-Item ''' + $thing.FullName + ''' ''' + $tgtPath + '480\' + $thing.name + '''') | Out-File process.bat -Encoding ascii -Append
+                    ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '480\' + $thing.name + '"') | Out-File process.ps1 -Encoding ascii -Append
                     Break
                 }
                 {$_ -gt 480 -and $_ -le 720}{
                     Write-Debug -Message ('Move-Item ' + $thing.FullName + ' ' + $tgtPath + '720\' + $thing.name)
-                    ('Move-Item ''' + $thing.FullName + ''' ''' + $tgtPath + '720\' + $thing.name + '''') | Out-File process.bat -Encoding ascii -Append
+                    ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '720\' + $thing.name + '"') | Out-File process.ps1 -Encoding ascii -Append
                     Break
                 }
                 {$_ -gt 720 -and $_ -le 1080}{
                     Write-Debug -Message ('Move-Item ' + $thing.FullName + ' ' + $tgtPath + '1080\' + $thing.name)
-                    ('Move-Item ''' + $thing.FullName + ''' ''' + $tgtPath + '1080\' + $thing.name + '''') | Out-File process.bat -Encoding ascii -Append
+                    ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '1080\' + $thing.name + '"') | Out-File process.ps1 -Encoding ascii -Append
                     Break
                 }
                 {$_ -gt 1080}{
                     Write-Debug -Message ('Move-Item ' + $thing.FullName + ' ' + $tgtPath + '2160\' + $thing.name)
-                    ('Move-Item ''' + $thing.FullName + ''' ''' + $tgtPath + '4K\' + $thing.name + '''') | Out-File process.bat -Encoding ascii -Append
+                    ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '2160\' + $thing.name + '"') | Out-File process.ps1 -Encoding ascii -Append
                     Break
                 }
                 default {
@@ -217,20 +239,5 @@ Foreach ($thing in $tld){
         Write-Host -ForegroundColor Red "This should never happen. I do not know what $thing is..."
     }
 }
-
-
-
-# ForEach Folder
-#        Store the name of the folder
-#        Look for video files (how to handle if multiple large?)
-#        Get all files? Loop through to find vid files and check for multiple large? Skip then?
-#        For Each video file of matching type
-#            FFProbe to read vertical res
-#            If fileRes <= 480
-#            If fileRes 480 - 720
-#            If fileRes 720 - 1080
-#            If fileRes 1080+
-#            Else put in DumpFldr
-#              Files that can't be read I guess?
-
 }
+
