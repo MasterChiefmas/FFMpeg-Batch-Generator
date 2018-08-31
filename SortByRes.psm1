@@ -56,8 +56,7 @@ function IsVidType{
 }
 
 function SortByRes{
-# Define Vars
-# Get params
+
     Param(
     [string]$srcPath,
     [string]$destPath
@@ -106,8 +105,13 @@ catch {
 
 # Establish the batch file to store the processing commands...
 try {
+<<<<<<< HEAD
     New-Item -Force .\process.bat
     "" | Out-File .\process.bat -Encoding ascii -Append
+=======
+    New-Item -Force .\MoveProcessedFolders.ps1
+    "" | Out-File .\MoveProcessedFolders.ps1 -Encoding ascii -Append
+>>>>>>> 4f0d190... cleanup the resulting file name when using folder name as a base.
 }
 catch {
     Write-Debug -Message "Unable to setup process.bat"
@@ -134,19 +138,39 @@ Foreach ($thing in $tld){
         # Set base file name from folder name, look in subfolders for videos
         Write-Host -ForegroundColor Green "Processing $thing as a folder..."
         try {
+<<<<<<< HEAD
             $files = Get-ChildItem -File -Recurse -LiteralPath $thing.FullName
+=======
+            # Get video files from the current folder
+            $files = Get-ChildItem -File -Recurse -Include "*.mkv","*.mp4","*.avi","*.mpeg","*.mov","*.m4v","*.flv","*.wmv" "$thing"
+
+			# Log any folders that had more then 1 video file
+			If ($files.Count -ge 2) {
+				('Move-Item "' + $thing.FullName + '" "' + $tgtPath + 'MultiVideoFolders\' + '"') | Out-File MultiVideoFolderList.ps1 -Encoding ascii -Append
+			}
+
+			# Skip if there's 3 or more video files (2 files may just be a sample video)
+			If ($files.Count -ge 3) {
+				continue
+			}
+
+            # Write out command to move the folder to processed folders area
+            ('Move-Item "' + $thing.FullName + '" "' + $processedPath + '"') | Out-File MoveProcessedFolders.ps1 -Encoding ascii -Append
+
+>>>>>>> 4f0d190... cleanup the resulting file name when using folder name as a base.
             foreach ($file in $files){
                 # Skip if 'sample' is in the name
                 If ($file.FullName -match 'sample'){
                     Write-Host 'Skipping ' $file.FullName ' because it looks like a sample'
                     continue
                 }
-                # Processing normal file
+                # Processing video file
                 If((IsVidType($file)) -eq $true){
                     $VidRes = GetVidRes($file.FullName)
                     Write-Debug -Message ($file.FullName + " is "+$VidRes+" pixels high")
                     # save the extension.
                     $extension = ($file.Name.ToString()).Substring(($file.Name.ToString()).IndexOf(".")+1)
+<<<<<<< HEAD
                     # Set target file to save commands to for this file
                     If (($extension).ToLower() -eq 'wmv'){
                         $batFile = "processWMV.ps1"
@@ -173,6 +197,37 @@ Foreach ($thing in $tld){
                         {$_ -gt 1080}{
                             Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '2160\' + $thing.name + '.' + $extension)
                             ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '2160\' + $thing.name + '.' + $extension + '"') | Out-File $batFile -Encoding ascii -Append
+=======
+                    
+                    # Generate the filename used when moving the file
+                    If (($thing.Name.ToLower().IndexOf(".xxx")) -gt 0){
+                        $CleanName = $thing.Name.Substring(0,$thing.Name.ToLower().IndexOf(".xxx"))
+                    }
+                    else
+                    {
+                        $CleanName = $thing.Name
+                    }
+                    
+                    Switch ($VidRes){
+                        {$_ -le 480}{
+                            Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '480\' + $CleanName + '.' + $extension)
+                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '480\' + $CleanName + '.' + $extension + '"') | Out-File process.ps1 -Encoding ascii -Append
+                            Break
+                        }
+                        {$_ -gt 480 -and $_ -le 720}{
+                            Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '720\' + $CleanName + '.' + $extension)
+                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '720\' + $CleanName + '.' + $extension + '"') | Out-File process.ps1 -Encoding ascii -Append
+                            Break
+                        }
+                        {$_ -gt 720 -and $_ -le 1080}{
+                            Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '1080\' + $CleanName + '.' + $extension)
+                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '1080\' + $CleanName + '.' + $extension + '"') | Out-File process.ps1 -Encoding ascii -Append
+                            Break
+                        }
+                        {$_ -gt 1080}{
+                            Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '2160\' + $CleanName + '.' + $extension)
+                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '2160\' + $CleanName + '.' + $extension + '"') | Out-File process.ps1 -Encoding ascii -Append
+>>>>>>> 4f0d190... cleanup the resulting file name when using folder name as a base.
                             Break
                         }
                         default {
