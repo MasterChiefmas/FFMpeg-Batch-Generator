@@ -178,7 +178,8 @@ Foreach ($thing in $tld){
                     {
                         $CleanName = $thing.Name
                     }
-                    
+                    Write-Debug -Message ("Set clean name to $CleanName")
+
                     Switch ($VidRes[3]){
                         {$_ -le 480}{
                             Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '480\' + $CleanName + '.' + $extension)
