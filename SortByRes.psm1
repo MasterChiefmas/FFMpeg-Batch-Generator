@@ -24,7 +24,6 @@ function GetVidRes{
     else{
         $ffprobeCmd = $ffprobe + $ffprobeSwitches + '"' + $target + '"'
         $frameHeight = Invoke-Expression $ffprobeCmd
-        Write-Debug -Message ("tmpStr:" + $tmpStr.GetType())
         Write-Debug -Message ("GetVidRes:"+$target+" has a frame height of " + $frameHeight)
         return $frameHeight
     }
@@ -58,8 +57,7 @@ function IsVidType{
 }
 
 function SortByRes{
-# Define Vars
-# Get params
+
     Param(
     [string]$srcPath,
     [string]$destPath
@@ -112,8 +110,8 @@ catch {
 
 # Establish the script file to store the folder cleanup commands...
 try {
-    New-Item -Force .\CleanUp.ps1
-    "" | Out-File .\CleanUp.ps1 -Encoding ascii -Append
+    New-Item -Force .\MoveProcessedFolders.ps1
+    "" | Out-File .\MoveProcessedFolders.ps1 -Encoding ascii -Append
 }
 catch {
     Write-Debug -Message "Unable to setup process.ps1"
@@ -140,46 +138,63 @@ Foreach ($thing in $tld){
         # Set base file name from folder name, look in subfolders for videos
         Write-Host -ForegroundColor Green "Processing $thing as a folder..."
         try {
+            # Get video files from the current folder
             $files = Get-ChildItem -File -Recurse -Include "*.mkv","*.mp4","*.avi","*.mpeg","*.mov","*.m4v","*.flv","*.wmv" "$thing"
+
 			# Log any folders that had more then 1 video file
 			If ($files.Count -ge 2) {
-				('Move-Item "' + $thing.FullName + '" "' + $tgtPath + 'MultiVideoFolders\' + $thing.name + '"') | Out-File MultiVideoFolderList.ps1 -Encoding ascii -Append
+				('Move-Item "' + $thing.FullName + '" "' + $tgtPath + 'MultiVideoFolders\' + '"') | Out-File MultiVideoFolderList.ps1 -Encoding ascii -Append
 			}
+
 			# Skip if there's 3 or more video files (2 files may just be a sample video)
 			If ($files.Count -ge 3) {
 				continue
 			}
+
+            # Write out command to move the folder to processed folders area
+            ('Move-Item "' + $thing.FullName + '" "' + $processedPath + '"') | Out-File MoveProcessedFolders.ps1 -Encoding ascii -Append
+
             foreach ($file in $files){
                 # Skip if 'sample' is in the name
                 If ($file.FullName -match 'sample'){
                     Write-Host 'Skipping ' $file.FullName ' because it looks like a sample'
                     continue
                 }
-                # Processing normal file
+                # Processing video file
                 If((IsVidType($file)) -eq $true){
                     $VidRes = GetVidRes($file.FullName)
                     Write-Debug -Message ($file.FullName + " is "+$VidRes+" pixels high")
                     # save the extension.
                     $extension = ($file.Name.ToString()).Substring(($file.Name.ToString()).IndexOf(".")+1)
-                    Switch ($VidRes[2]){
+                    
+                    # Generate the filename used when moving the file
+                    If (($thing.Name.ToLower().IndexOf(".xxx")) -gt 0){
+                        $CleanName = $thing.Name.Substring(0,$thing.Name.ToLower().IndexOf(".xxx"))
+                    }
+                    else
+                    {
+                        $CleanName = $thing.Name
+                    }
+                    
+                    Switch ($VidRes){
                         {$_ -le 480}{
-                            Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '480\' + $thing.name + '.' + $extension)
-                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '480\' + $thing.name + '.' + $extension + '"') | Out-File process.ps1 -Encoding ascii -Append
+                            Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '480\' + $CleanName + '.' + $extension)
+                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '480\' + $CleanName + '.' + $extension + '"') | Out-File process.ps1 -Encoding ascii -Append
                             Break
                         }
                         {$_ -gt 480 -and $_ -le 720}{
-                            Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '720\' + $thing.name + '.' + $extension)
-                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '720\' + $thing.name + '.' + $extension + '"') | Out-File process.ps1 -Encoding ascii -Append
+                            Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '720\' + $CleanName + '.' + $extension)
+                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '720\' + $CleanName + '.' + $extension + '"') | Out-File process.ps1 -Encoding ascii -Append
                             Break
                         }
                         {$_ -gt 720 -and $_ -le 1080}{
-                            Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '1080\' + $thing.name + '.' + $extension)
-                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '1080\' + $thing.name + '.' + $extension + '"') | Out-File process.ps1 -Encoding ascii -Append
+                            Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '1080\' + $CleanName + '.' + $extension)
+                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '1080\' + $CleanName + '.' + $extension + '"') | Out-File process.ps1 -Encoding ascii -Append
                             Break
                         }
                         {$_ -gt 1080}{
-                            Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '2160\' + $thing.name + '.' + $extension)
-                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '2160\' + $thing.name + '.' + $extension + '"') | Out-File process.ps1 -Encoding ascii -Append
+                            Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '2160\' + $CleanName + '.' + $extension)
+                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '2160\' + $CleanName + '.' + $extension + '"') | Out-File process.ps1 -Encoding ascii -Append
                             Break
                         }
                         default {
