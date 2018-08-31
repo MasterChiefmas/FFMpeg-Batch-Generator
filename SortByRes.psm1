@@ -13,16 +13,15 @@ function GetVidRes{
     [string]$ffprobeSwitches = ' -v error -show_entries stream=height -of default=noprint_wrappers=1:nokey=1 '
     [string]$ffprobeCmd
     $frameHeight
-    $tmpStr
 
     # Someday, I should check to be sure ffprobe.exe exists
 
     If ($target -eq $null){
         Write-Host -ForegroundColor Yellow "A file path is required."
-        return "0"
+        return 0
     }
     else{
-        $ffprobeCmd = $ffprobe + $ffprobeSwitches + '"' + $target + '"'
+        $ffprobeCmd = $ffprobe + $ffprobeSwitches + $target
         $frameHeight = Invoke-Expression $ffprobeCmd
         Write-Debug -Message ("GetVidRes:"+$target+" has a frame height of " + $frameHeight)
         return $frameHeight
@@ -57,7 +56,8 @@ function IsVidType{
 }
 
 function SortByRes{
-
+# Define Vars
+# Get params
     Param(
     [string]$srcPath,
     [string]$destPath
@@ -65,8 +65,6 @@ function SortByRes{
 
     
 $tgtPath = '\\fs2fast\poolroot\croco\!SortedByResolution\'
-$processedPath = '\\fs2fast\poolroot\croco\!Processed\'
-
 #$SortResolutions = @(480,720,1080)
 $tld
 [bool]$IsVid
@@ -98,23 +96,13 @@ catch {
     Exit
 }
 
-# Establish the script file to store the processing commands...
+# Establish the batch file to store the processing commands...
 try {
-    New-Item -Force .\process.ps1
-    "" | Out-File .\process.ps1 -Encoding ascii -Append
+    New-Item -Force .\process.bat
+    "" | Out-File .\process.bat -Encoding ascii -Append
 }
 catch {
-    Write-Debug -Message "Unable to setup process.ps1"
-    Exit
-}
-
-# Establish the script file to store the folder cleanup commands...
-try {
-    New-Item -Force .\MoveProcessedFolders.ps1
-    "" | Out-File .\MoveProcessedFolders.ps1 -Encoding ascii -Append
-}
-catch {
-    Write-Debug -Message "Unable to setup process.ps1"
+    Write-Debug -Message "Unable to setup process.bat"
     Exit
 }
 #### /Startup Checks ####
@@ -138,63 +126,38 @@ Foreach ($thing in $tld){
         # Set base file name from folder name, look in subfolders for videos
         Write-Host -ForegroundColor Green "Processing $thing as a folder..."
         try {
-            # Get video files from the current folder (this is only working in the current folder right now, $thing needs to be $thing.Fullname?)
-            $files = Get-ChildItem -File -Recurse -Include "*.mkv","*.mp4","*.avi","*.mpeg","*.mov","*.m4v","*.flv","*.wmv" $thing
-
-			# Skip if there's 3 or more video files (2 files may just be a sample video)
-			If ($files.Count -ge 3) {
-				('Move-Item "' + $thing.FullName + '" "' + $tgtPath + 'MultiVideoFolders\' + '"') | Out-File MultiVideoFolderList.ps1 -Encoding ascii -Append
-				continue
-			}
-
-            # Write out command to move the folder to processed folders area
-            ('Move-Item "' + $thing.FullName + '" "' + $processedPath + '"') | Out-File MoveProcessedFolders.ps1 -Encoding ascii -Append
-
+            $files = Get-ChildItem -File -Recurse -LiteralPath $thing.FullName
             foreach ($file in $files){
                 # Skip if 'sample' is in the name
                 If ($file.FullName -match 'sample'){
                     Write-Host 'Skipping ' $file.FullName ' because it looks like a sample'
                     continue
                 }
-                # Processing video file
+                # Processing normal file
                 If((IsVidType($file)) -eq $true){
-                    # Get the vertical res of the file.
-                    # Note: I don't know why, but this comes back as an array with 4 elements.
-                    # The res is actually in the last element.
                     $VidRes = GetVidRes($file.FullName)
                     Write-Debug -Message ($file.FullName + " is "+$VidRes+" pixels high")
                     # save the extension.
                     $extension = ($file.Name.ToString()).Substring(($file.Name.ToString()).IndexOf(".")+1)
-                    
-                    # Generate the filename used when moving the file
-                    If (($thing.Name.ToLower().IndexOf(".xxx")) -gt 0){
-                        $CleanName = $thing.Name.Substring(0,$thing.Name.ToLower().IndexOf(".xxx"))
-                    }
-                    else
-                    {
-                        $CleanName = $thing.Name
-                    }
-                    Write-Debug -Message ("Set clean name to $CleanName")
-
-                    Switch ($VidRes[3]){
+                    Switch ($VidRes){
                         {$_ -le 480}{
-                            Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '480\' + $CleanName + '.' + $extension)
-                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '480\' + $CleanName + '.' + $extension + '"') | Out-File process.ps1 -Encoding ascii -Append
+                            Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '480\' + $thing.name + '.' + $extension)
+                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '480\' + $thing.name + '.' + $extension + '"') | Out-File process.bat -Encoding ascii -Append
                             Break
                         }
                         {$_ -gt 480 -and $_ -le 720}{
-                            Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '720\' + $CleanName + '.' + $extension)
-                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '720\' + $CleanName + '.' + $extension + '"') | Out-File process.ps1 -Encoding ascii -Append
+                            Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '720\' + $thing.name + '.' + $extension)
+                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '720\' + $thing.name + '.' + $extension + '"') | Out-File process.bat -Encoding ascii -Append
                             Break
                         }
                         {$_ -gt 720 -and $_ -le 1080}{
-                            Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '1080\' + $CleanName + '.' + $extension)
-                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '1080\' + $CleanName + '.' + $extension + '"') | Out-File process.ps1 -Encoding ascii -Append
+                            Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '1080\' + $thing.name + '.' + $extension)
+                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '1080\' + $thing.name + '.' + $extension + '"') | Out-File process.bat -Encoding ascii -Append
                             Break
                         }
                         {$_ -gt 1080}{
-                            Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '2160\' + $CleanName + '.' + $extension)
-                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '2160\' + $CleanName + '.' + $extension + '"') | Out-File process.ps1 -Encoding ascii -Append
+                            Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '2160\' + $thing.name + '.' + $extension)
+                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '2160\' + $thing.name + '.' + $extension + '"') | Out-File process.bat -Encoding ascii -Append
                             Break
                         }
                         default {
@@ -222,22 +185,22 @@ Foreach ($thing in $tld){
             Switch ($VidRes){
                 {$_ -le 480}{
                     Write-Debug -Message ('Move-Item ' + $thing.FullName + ' ' + $tgtPath + '480\' + $thing.name)
-                    ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '480\' + $thing.name + '"') | Out-File process.ps1 -Encoding ascii -Append
+                    ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '480\' + $thing.name + '"') | Out-File process.bat -Encoding ascii -Append
                     Break
                 }
                 {$_ -gt 480 -and $_ -le 720}{
                     Write-Debug -Message ('Move-Item ' + $thing.FullName + ' ' + $tgtPath + '720\' + $thing.name)
-                    ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '720\' + $thing.name + '"') | Out-File process.ps1 -Encoding ascii -Append
+                    ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '720\' + $thing.name + '"') | Out-File process.bat -Encoding ascii -Append
                     Break
                 }
                 {$_ -gt 720 -and $_ -le 1080}{
                     Write-Debug -Message ('Move-Item ' + $thing.FullName + ' ' + $tgtPath + '1080\' + $thing.name)
-                    ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '1080\' + $thing.name + '"') | Out-File process.ps1 -Encoding ascii -Append
+                    ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '1080\' + $thing.name + '"') | Out-File process.bat -Encoding ascii -Append
                     Break
                 }
                 {$_ -gt 1080}{
                     Write-Debug -Message ('Move-Item ' + $thing.FullName + ' ' + $tgtPath + '2160\' + $thing.name)
-                    ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '2160\' + $thing.name + '"') | Out-File process.ps1 -Encoding ascii -Append
+                    ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '2160\' + $thing.name + '"') | Out-File process.bat -Encoding ascii -Append
                     Break
                 }
                 default {
@@ -255,4 +218,3 @@ Foreach ($thing in $tld){
     }
 }
 }
-
