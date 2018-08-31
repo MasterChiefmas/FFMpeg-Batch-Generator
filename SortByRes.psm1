@@ -138,8 +138,8 @@ Foreach ($thing in $tld){
         # Set base file name from folder name, look in subfolders for videos
         Write-Host -ForegroundColor Green "Processing $thing as a folder..."
         try {
-            # Get video files from the current folder
-            $files = Get-ChildItem -File -Recurse -Include "*.mkv","*.mp4","*.avi","*.mpeg","*.mov","*.m4v","*.flv","*.wmv"
+            # Get video files from the current folder (this is only working in the current folder right now, $thing needs to be $thing.Fullname?)
+            $files = Get-ChildItem -File -Recurse -Include "*.mkv","*.mp4","*.avi","*.mpeg","*.mov","*.m4v","*.flv","*.wmv" $thing
 
 			# Log any folders that had more then 1 video file
 			If ($files.Count -ge 2) {
