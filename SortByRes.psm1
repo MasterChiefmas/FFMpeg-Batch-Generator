@@ -141,13 +141,9 @@ Foreach ($thing in $tld){
             # Get video files from the current folder (this is only working in the current folder right now, $thing needs to be $thing.Fullname?)
             $files = Get-ChildItem -File -Recurse -Include "*.mkv","*.mp4","*.avi","*.mpeg","*.mov","*.m4v","*.flv","*.wmv" $thing
 
-			# Log any folders that had more then 1 video file
-			If ($files.Count -ge 3) {
-				('Move-Item "' + $thing.FullName + '" "' + $tgtPath + 'MultiVideoFolders\' + '"') | Out-File MultiVideoFolderList.ps1 -Encoding ascii -Append
-			}
-
 			# Skip if there's 3 or more video files (2 files may just be a sample video)
 			If ($files.Count -ge 3) {
+				('Move-Item "' + $thing.FullName + '" "' + $tgtPath + 'MultiVideoFolders\' + '"') | Out-File MultiVideoFolderList.ps1 -Encoding ascii -Append
 				continue
 			}
 
