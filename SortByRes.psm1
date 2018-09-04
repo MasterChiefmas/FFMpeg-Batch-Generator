@@ -21,10 +21,11 @@ function GetVidRes{
         return 0
     }
     else{
-        $ffprobeCmd = $ffprobe + $ffprobeSwitches + $target
+        $ffprobeCmd = $ffprobe + $ffprobeSwitches + '"' + $target + '"'
+        Write-Debug -Message "Probe Command:$ffprobeCmd"
         $frameHeight = Invoke-Expression $ffprobeCmd
         Write-Debug -Message ("GetVidRes:"+$target+" has a frame height of " + $frameHeight)
-        return ($frameHeight).ToString()
+        return (-join $frameHeight)
     }
 
 }
@@ -150,7 +151,7 @@ Foreach ($thing in $tld){
 				('Move-Item "' + $thing.FullName + '" "' + $tgtPath + 'MultiVideoFolders\' + '"') | Out-File MultiVideoFolderList.ps1 -Encoding ascii -Append
 			}
 
-			# Skip if there's 2 or more video files (2 files may just be a sample video)
+			# Skip if there's 2 or more video files (playing it safe, we'll see how annoying this ends up being)
 			If ($files.Count -ge 2) {
 				continue
 			}
@@ -170,7 +171,7 @@ Foreach ($thing in $tld){
                     # Get the vertical res of the file.
                     # Note: I don't know why, but this comes back as an array with 4 elements.
                     # The res is actually in the last element.
-                    $VidRes = GetVidRes($file.FullName)
+                    $VidRes = -join (GetVidRes($file.FullName))
                     Write-Debug -Message ($file.FullName + " is "+$VidRes+" pixels high")
                     # save the extension.
                     $extension = ($file.Name.ToString()).Substring(($file.Name.ToString()).IndexOf(".")+1)
@@ -202,8 +203,9 @@ Foreach ($thing in $tld){
                     }
                     
                     # Set the target folder based on the resolution
-                    Switch ($VidRes){
+                    Switch ($VidRes -as [Int]){
                         {$_ -le 480}{
+                            Write-Debug -Message ('$_ ($VidRes) is ' + $_)
                             Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '480\' + $CleanName + '.' + $extension)
                             ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '480\' + $CleanName + '.' + $extension + '"') | Out-File $batFile -Encoding ascii -Append
                             Break
@@ -245,7 +247,7 @@ Foreach ($thing in $tld){
         If((IsVidType($thing)) -eq $true){
             $VidRes = GetVidRes($thing.FullName)
             Write-Debug -Message ($thing.FullName + " is "+$VidRes+" pixels high")
-            Switch ($VidRes){
+            Switch ($VidRes -as [Int]){
                 {$_ -le 480}{
                     Write-Debug -Message ('Move-Item ' + $thing.FullName + ' ' + $tgtPath + '480\' + $thing.name)
                     ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '480\' + $thing.name + '"') | Out-File process.ps1 -Encoding ascii -Append
