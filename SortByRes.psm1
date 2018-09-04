@@ -24,7 +24,7 @@ function GetVidRes{
         $ffprobeCmd = $ffprobe + $ffprobeSwitches + $target
         $frameHeight = Invoke-Expression $ffprobeCmd
         Write-Debug -Message ("GetVidRes:"+$target+" has a frame height of " + $frameHeight)
-        return $frameHeight
+        return ($frameHeight).ToString()
     }
 
 }
@@ -141,19 +141,22 @@ Foreach ($thing in $tld){
         Write-Host -ForegroundColor Green "Processing $thing as a folder..."
         try {
             # Get video files from the current folder
+            Write-Debug -Message ("Getting files from the subfolder")
             $files = Get-ChildItem -File -Recurse -Include "*.mkv","*.mp4","*.avi","*.mpeg","*.mov","*.m4v","*.flv","*.wmv" "$thing"
 
-			# Log any folders that had more then 1 video file
+            # Log any folders that had more then 1 video file
+            Write-Debug -Message ("Checking the file counts")
 			If ($files.Count -ge 2) {
 				('Move-Item "' + $thing.FullName + '" "' + $tgtPath + 'MultiVideoFolders\' + '"') | Out-File MultiVideoFolderList.ps1 -Encoding ascii -Append
 			}
 
-			# Skip if there's 3 or more video files (2 files may just be a sample video)
-			If ($files.Count -ge 3) {
+			# Skip if there's 2 or more video files (2 files may just be a sample video)
+			If ($files.Count -ge 2) {
 				continue
 			}
 
             # Write out command to move the folder to processed folders area
+            Write-Debug -Message ("Writing the command to move processed folders...")
             ('Move-Item "' + $thing.FullName + '" "' + $processedPath + '"') | Out-File MoveProcessedFolders.ps1 -Encoding ascii -Append
 
             foreach ($file in $files){
@@ -164,10 +167,15 @@ Foreach ($thing in $tld){
                 }
                 # Processing video file
                 If((IsVidType($file)) -eq $true){
+                    # Get the vertical res of the file.
+                    # Note: I don't know why, but this comes back as an array with 4 elements.
+                    # The res is actually in the last element.
                     $VidRes = GetVidRes($file.FullName)
                     Write-Debug -Message ($file.FullName + " is "+$VidRes+" pixels high")
                     # save the extension.
                     $extension = ($file.Name.ToString()).Substring(($file.Name.ToString()).IndexOf(".")+1)
+
+
                     # Set target file to save commands to for this file
                     If (($extension).ToLower() -eq 'wmv'){
                         $batFile = "processWMV.ps1"
@@ -240,22 +248,22 @@ Foreach ($thing in $tld){
             Switch ($VidRes){
                 {$_ -le 480}{
                     Write-Debug -Message ('Move-Item ' + $thing.FullName + ' ' + $tgtPath + '480\' + $thing.name)
-                    ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '480\' + $thing.name + '"') | Out-File process.bat -Encoding ascii -Append
+                    ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '480\' + $thing.name + '"') | Out-File process.ps1 -Encoding ascii -Append
                     Break
                 }
                 {$_ -gt 480 -and $_ -le 720}{
                     Write-Debug -Message ('Move-Item ' + $thing.FullName + ' ' + $tgtPath + '720\' + $thing.name)
-                    ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '720\' + $thing.name + '"') | Out-File process.bat -Encoding ascii -Append
+                    ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '720\' + $thing.name + '"') | Out-File process.ps1 -Encoding ascii -Append
                     Break
                 }
                 {$_ -gt 720 -and $_ -le 1080}{
                     Write-Debug -Message ('Move-Item ' + $thing.FullName + ' ' + $tgtPath + '1080\' + $thing.name)
-                    ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '1080\' + $thing.name + '"') | Out-File process.bat -Encoding ascii -Append
+                    ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '1080\' + $thing.name + '"') | Out-File process.ps1 -Encoding ascii -Append
                     Break
                 }
                 {$_ -gt 1080}{
                     Write-Debug -Message ('Move-Item ' + $thing.FullName + ' ' + $tgtPath + '2160\' + $thing.name)
-                    ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '2160\' + $thing.name + '"') | Out-File process.bat -Encoding ascii -Append
+                    ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '2160\' + $thing.name + '"') | Out-File process.ps1 -Encoding ascii -Append
                     Break
                 }
                 default {
