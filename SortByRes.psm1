@@ -9,7 +9,7 @@ function GetVidRes{
 
     # Use ffprobe.exe to figure out resolution of a video
     [string]$ffmpegroot = 'C:\ffmpeg'
-    [string]$ffprobe = 'C:\ffmpeg\ffprobe.exe'
+    [string]$ffprobe = $ffmpegroot + '\ffprobe.exe'
     [string]$ffprobeSwitches = ' -v error -show_entries stream=height -of default=noprint_wrappers=1:nokey=1 '
     [string]$ffprobeCmd
     $frameHeight
@@ -39,7 +39,7 @@ function IsVidType{
 
     [string]$fileFullName
     [string]$fileExt
-    $vidExtensions = @('mkv','mp4','wmv','avi','mpg','flv','mov','vob','m4v')
+    $vidExtensions = @('mkv','mp4','wmv','avi','mpg','flv','mov','vob','m4v', 'mpeg','vob')
 
     # Assumes a 3 character extension is present. It shouldn't matter if there isn't one.
     $fileFullName = $file.FullName.ToString()
@@ -70,6 +70,7 @@ $tld
 [bool]$IsVid
 $VidRes
 $files   
+$batFile
 
 # Hardcode acceptable resolutions?
 
@@ -85,6 +86,13 @@ Catch{
     Exit
 }
 
+# Clean up existing batch files
+If (Test-Path .\process.bat){
+    Remove-item .\process.ps1
+}
+If (Test-Path .\processWMV.bat){
+    Remove-item .\processWMV.ps1
+}
 
 # Get the top level folder to sort
 Write-Debug -Message "Getting top level folder"
@@ -139,25 +147,32 @@ Foreach ($thing in $tld){
                     Write-Debug -Message ($file.FullName + " is "+$VidRes+" pixels high")
                     # save the extension.
                     $extension = ($file.Name.ToString()).Substring(($file.Name.ToString()).IndexOf(".")+1)
+                    # Set target file to save commands to for this file
+                    If (($extension).ToLower() -eq 'wmv'){
+                        $batFile = "processWMV.ps1"
+                    }
+                    else{
+                        $batFile = "process.ps1"
+                    }
                     Switch ($VidRes){
                         {$_ -le 480}{
                             Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '480\' + $thing.name + '.' + $extension)
-                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '480\' + $thing.name + '.' + $extension + '"') | Out-File process.bat -Encoding ascii -Append
+                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '480\' + $thing.name + '.' + $extension + '"') | Out-File $batFile -Encoding ascii -Append
                             Break
                         }
                         {$_ -gt 480 -and $_ -le 720}{
                             Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '720\' + $thing.name + '.' + $extension)
-                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '720\' + $thing.name + '.' + $extension + '"') | Out-File process.bat -Encoding ascii -Append
+                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '720\' + $thing.name + '.' + $extension + '"') | Out-File $batFile -Encoding ascii -Append
                             Break
                         }
                         {$_ -gt 720 -and $_ -le 1080}{
                             Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '1080\' + $thing.name + '.' + $extension)
-                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '1080\' + $thing.name + '.' + $extension + '"') | Out-File process.bat -Encoding ascii -Append
+                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '1080\' + $thing.name + '.' + $extension + '"') | Out-File $batFile -Encoding ascii -Append
                             Break
                         }
                         {$_ -gt 1080}{
                             Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '2160\' + $thing.name + '.' + $extension)
-                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '2160\' + $thing.name + '.' + $extension + '"') | Out-File process.bat -Encoding ascii -Append
+                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '2160\' + $thing.name + '.' + $extension + '"') | Out-File $batFile -Encoding ascii -Append
                             Break
                         }
                         default {
