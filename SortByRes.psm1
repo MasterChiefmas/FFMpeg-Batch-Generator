@@ -17,7 +17,7 @@ function GetVidRes{
     # Someday, I should check to be sure ffprobe.exe exists
 
     If ($target -eq $null){
-        Write-Host -ForegroundColor Yellow "A file path is required."
+        Write-Host -ForegroundColor Yellow "GetVidRes: A file path is required."
         return 0
     }
     else{
@@ -155,7 +155,10 @@ Foreach ($thing in $tld){
 				('Move-Item "' + $thing.FullName + '" "' + $tgtPath + 'MultiVideoFolders\' + '"') | Out-File MultiVideoFolderList.ps1 -Encoding ascii -Append
 			}
 
-			# Skip if there's 2 or more video files (playing it safe, we'll see how annoying this ends up being)
+            # Skip if there's 2 or more video files (playing it safe, we'll see how annoying this ends up being)
+            # A % size comparison for 2 files might be a useful guesstimate, or just look for "sample"
+            # ffprobe to compare running times may work too. What to use as cutoff...10%? Assumne 20-30 min vid probably only has 20-30 sec sample, so it's well under...
+            # Or just look and see if any of the videos is under say, 60 seconds? 
 			If ($files.Count -ge 2) {
 				continue
 			}
@@ -173,8 +176,8 @@ Foreach ($thing in $tld){
                 # Processing video file
                 If((IsVidType($file)) -eq $true){
                     # Get the vertical res of the file.
-                    # Note: I don't know why, but this comes back as an array with 4 elements.
-                    # The res is actually in the last element.
+                    # Note: I don't know why, but this sometimes comes back as an array with 4 elements.
+                    # The res is actually in the last element in that case. Using join to just cheat out of it
                     $VidRes = -join (GetVidRes($file.FullName))
                     Write-Debug -Message ($file.FullName + " is "+$VidRes+" pixels high")
                     # save the extension.
