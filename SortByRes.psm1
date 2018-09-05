@@ -78,10 +78,10 @@ $batFile
 #### Startup Checks ####        
 # Verify Sort Target + subfolders exists
 Try{
-    $srcPath = Read-Host "Path to sort(default to current):"
+    $srcPath = Read-Host "Path to sort(default to current)"
     # Set default if no response
-    If ($srcPath -eq ""){$srcPath = ".\"}
-    # Validate path.
+    If (!$srcPath){$srcPath = ".\"}
+    # Validate path
     If (!(Test-Path $srcPath)){
         Write-Host "Path not found"
     }
