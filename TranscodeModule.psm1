@@ -46,6 +46,22 @@ function Get-FFMpeg-Cmd{
     [string]$bitrate="700k"
     )
 
+
+    #### Startup Checks ####        
+    Try{
+        $ckPath = Read-Host "Path to encode(default to current)"
+        # Set default if no response
+        If (!$ckPath){$ckPath = ".\"}
+        # Validate path
+        If (!(Test-Path $ckPath)){
+            Write-Host "Path not found"
+        }
+    }
+    Catch{
+        Write-Debug -Message "There was a problem validating the soruce path"
+        Exit
+    }
+
     Write-Debug -Message "Processing files in $ckPath"
     Write-Debug -Message "EncodeMode:$mode"
 
