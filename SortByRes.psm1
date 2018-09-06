@@ -88,6 +88,7 @@ Try{
 }
 Catch{
     Write-Debug -Message "There was a problem validating the path"
+    Pause
     Exit
 }
 
@@ -104,6 +105,9 @@ If (Test-Path .\MoveProcessedFolders.ps1){
 If (Test-Path .\MultiVideoFolderList.ps1){
     Remove-item .\MultiVideoFolderList.ps1
 }
+If (Test-Path .\RemoveItems.ps1){
+    Remove-item .\RemoveItems.ps1
+}
 
 # Get the top level folder to sort
 Write-Debug -Message "Getting top level folder"
@@ -112,6 +116,7 @@ try {
 }
 catch {
     "Unable to get Top Level Folder: $srcPath"
+    Pause
     Exit
 }
 
@@ -122,6 +127,7 @@ try {
 }
 catch {
     Write-Debug -Message "Unable to setup process.bat"
+    Pause
     Exit
 }
 #### /Startup Checks ####
@@ -134,6 +140,7 @@ try {
 }
 catch {
     "Unable to get Top Level Folder: $srcPath"
+    Pause
     Exit
 }
 
@@ -168,9 +175,11 @@ Foreach ($thing in $tld){
             ('Move-Item "' + $thing.FullName + '" "' + $processedPath + '"') | Out-File MoveProcessedFolders.ps1 -Encoding ascii -Append
 
             foreach ($file in $files){
-                # Skip if 'sample' is in the name
+                # Queue for removal if 'sample' is in the name
                 If ($file.FullName -match 'sample'){
-                    Write-Host 'Skipping ' $file.FullName ' because it looks like a sample'
+                    Write-Host 'Queue for deletion ' $file.FullName ' because it looks like a sample'
+                    # Delete these
+                    ('Remove-Item "' + $file.FullName + '"') | Out-File ".\RemoveItems.ps1" -Encoding ascii -Append
                     continue
                 }
                 # Processing video file
@@ -218,25 +227,25 @@ Foreach ($thing in $tld){
                         {$_ -le 480}{
                             Write-Debug -Message ('$_ ($VidRes) is ' + $_)
                             Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '480\' + $CleanName + '.' + $extension)
-                            ("Write-Host -Foregroundcolor green 'Moving '" + $file.FullName + "' to '" + $tgtPath + "'480\'" + $CleanName + "'.'" + $extension) | Out-File $batFile -Encoding ascii -Append
+                            ("Write-Host -Foregroundcolor green 'Moving " + $file.FullName + " to " + $tgtPath + "480\" + $CleanName + "." + $extension + "'") | Out-File $batFile -Encoding ascii -Append
                             ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '480\' + $CleanName + '.' + $extension + '"') | Out-File $batFile -Encoding ascii -Append
                             Break
                         }
                         {$_ -gt 480 -and $_ -le 720}{
                             Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '720\' + $CleanName + '.' + $extension)
-                            ("Write-Host -Foregroundcolor green 'Moving '" + $file.FullName + "' to '" + $tgtPath + "'720\'" + $CleanName + "'.'" + $extension) | Out-File $batFile -Encoding ascii -Append
+                            ("Write-Host -Foregroundcolor green 'Moving " + $file.FullName + " to " + $tgtPath + "720\" + $CleanName + "." + $extension + "'") | Out-File $batFile -Encoding ascii -Append
                             ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '720\' + $CleanName + '.' + $extension + '"') | Out-File $batFile -Encoding ascii -Append
                             Break
                         }
                         {$_ -gt 720 -and $_ -le 1080}{
                             Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '1080\' + $CleanName + '.' + $extension)
-                            ("Write-Host -Foregroundcolor green 'Moving '" + $file.FullName + "' to '" + $tgtPath + "'1080\'" + $CleanName + "'.'" + $extension) | Out-File $batFile -Encoding ascii -Append
+                            ("Write-Host -Foregroundcolor green 'Moving " + $file.FullName + " to " + $tgtPath + "1080\" + $CleanName + "." + $extension + "'") | Out-File $batFile -Encoding ascii -Append
                             ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '1080\' + $CleanName + '.' + $extension + '"') | Out-File $batFile -Encoding ascii -Append
                             Break
                         }
                         {$_ -gt 1080}{
                             Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '2160\' + $CleanName + '.' + $extension)
-                            ("Write-Host -Foregroundcolor green 'Moving '" + $file.FullName + "' to '" + $tgtPath + "'2160\'" + $CleanName + "'.'" + $extension) | Out-File $batFile -Encoding ascii -Append
+                            ("Write-Host -Foregroundcolor green 'Moving " + $file.FullName + " to " + $tgtPath + "2160\" + $CleanName + "." + $extension + "'") | Out-File $batFile -Encoding ascii -Append
                             ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '2160\' + $CleanName + '.' + $extension + '"') | Out-File $batFile -Encoding ascii -Append
                             Break
                         }
@@ -255,8 +264,10 @@ Foreach ($thing in $tld){
         # Verify it's a video, assume file name is valid. Check resolution.
         Write-Host -ForegroundColor Green "Processing $thing as a file..."
         If ($thing.FullName -match 'sample'){
-            # Skip if 'sample' is in the name
-            Write-Host 'Skipping ' $thing.FullName ' because it looks like a sample'
+            # Queue for removal if 'sample' is in the name
+            Write-Host 'Queue ' + $thing.FullName + ' because it looks like a sample'
+            # Delete these
+            ('Remove-Item "' + $file.FullName + '"') | Out-File ".\RemoveItems.ps1" -Encoding ascii -Append
             Continue
         }
         If((IsVidType($thing)) -eq $true){
@@ -265,25 +276,25 @@ Foreach ($thing in $tld){
             Switch ($VidRes -as [Int]){
                 {$_ -le 480}{
                     Write-Debug -Message ('Move-Item ' + $thing.FullName + ' ' + $tgtPath + '480\' + $thing.name)
-                    ("Write-Host -Foregroundcolor Green 'Moving '" + $thing.FullName + "' to '" + $tgtPath + "'480\'" + $thing.name) | Out-File process.ps1 -Encoding ascii -Append
+                    ("Write-Host -Foregroundcolor Green 'Moving " + $thing.FullName + " to " + $tgtPath + "480\" + $thing.name + "'") | Out-File process.ps1 -Encoding ascii -Append
                     ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '480\' + $thing.name + '"') | Out-File process.ps1 -Encoding ascii -Append
                     Break
                 }
                 {$_ -gt 480 -and $_ -le 720}{
                     Write-Debug -Message ('Move-Item ' + $thing.FullName + ' ' + $tgtPath + '720\' + $thing.name)
-                    ("Write-Host -Foregroundcolor Green 'Moving '" + $thing.FullName + "' to '" + $tgtPath + "'720\'" + $thing.name) | Out-File process.ps1 -Encoding ascii -Append
+                    ("Write-Host -Foregroundcolor Green 'Moving " + $thing.FullName + " to " + $tgtPath + "720\" + $thing.name + "'") | Out-File process.ps1 -Encoding ascii -Append
                     ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '720\' + $thing.name + '"') | Out-File process.ps1 -Encoding ascii -Append
                     Break
                 }
                 {$_ -gt 720 -and $_ -le 1080}{
                     Write-Debug -Message ('Move-Item ' + $thing.FullName + ' ' + $tgtPath + '1080\' + $thing.name)
-                    ("Write-Host -Foregroundcolor Green 'Moving '" + $thing.FullName + "' to '" + $tgtPath + "'1080\'" + $thing.name) | Out-File process.ps1 -Encoding ascii -Append
+                    ("Write-Host -Foregroundcolor Green 'Moving " + $thing.FullName + " to " + $tgtPath + "1080\" + $thing.name + "'") | Out-File process.ps1 -Encoding ascii -Append
                     ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '1080\' + $thing.name + '"') | Out-File process.ps1 -Encoding ascii -Append
                     Break
                 }
                 {$_ -gt 1080}{
                     Write-Debug -Message ('Move-Item ' + $thing.FullName + ' ' + $tgtPath + '2160\' + $thing.name)
-                    ("Write-Host -Foregroundcolor Green 'Moving '" + $thing.FullName + "' to '" + $tgtPath + "'2160\'" + $thing.name) | Out-File process.ps1 -Encoding ascii -Append
+                    ("Write-Host -Foregroundcolor Green 'Moving " + $thing.FullName + " to " + $tgtPath + "2160\" + $thing.name + "'") | Out-File process.ps1 -Encoding ascii -Append
                     ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '2160\' + $thing.name + '"') | Out-File process.ps1 -Encoding ascii -Append
                     Break
                 }
