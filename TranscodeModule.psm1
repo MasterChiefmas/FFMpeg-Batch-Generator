@@ -49,19 +49,8 @@ function Get-FFMpeg-Cmd{
     Write-Debug -Message "Processing files in $ckPath"
     Write-Debug -Message "EncodeMode:$mode"
 
-    # change to reading source file info via ffprobe
-    # build concat decode and sw/hw decode based on that
-    # copy to hw decode seems like it'll be slower then qsv for sw decode, hw transform and encode
-    # have not tested sw decode, sw transform, hw encode. not sure if that's possible to upload frame after transorm..
-    # frame copies may incur too much penalty to ever be worth it at std def
-    #
-    # Example software path partial (transform+encode)
-    # -vf "scale=640:360" -b:v 700k -c:v libx264 -preset superfast -c:a copy -y outfile
-    # not sure if -b:v neede since preset is specified.
-    # alternate use CRF instead of bitrate?
-    # -vf "scale=640:360" -c:v libx264 -preset superfast -CRF 23 -c:a copy -y outfile
 
-
+    
     # base path for where transcode targets will be written
     $tgtPath = "\\fs2\poolroot\croco\!recodes\"
     # srcPath not needed? derivied from file path?
