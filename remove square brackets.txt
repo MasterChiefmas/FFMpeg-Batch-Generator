@@ -1,0 +1,6 @@
+get-childitem | ForEach-Object {
+    Write-Host -ForegroundColor Green $_.name
+     Move-Item -LiteralPath $_.name $_.name.Replace("[","(")
+     }
+     
+get-childitem | ForEach-Object { Move-Item -LiteralPath $_.name $_.name.Replace("]",")")}
