@@ -182,6 +182,7 @@ Foreach ($thing in $tld){
                     Write-Debug -Message ($file.FullName + " is "+$VidRes+" pixels high")
                     # save the extension.
                     $extension = ($file.Name.ToString()).Substring(($file.Name.ToString()).IndexOf(".")+1)
+                    Write-Debug -Message ("Extension set to $extension")
 
 
                     # Set target file to save commands to for this file
