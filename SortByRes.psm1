@@ -203,10 +203,12 @@ Foreach ($thing in $tld){
                     # Generate the filename used when moving the file, and clean up common extraneous stuff
                     If (($thing.Name.ToLower().IndexOf(".xxx")) -gt 0){
                         $CleanName = $thing.Name.Substring(0,$thing.Name.ToLower().IndexOf(".xxx"))
+                        Write-Debug -Message ("CleanName scrubbed to $CleanName")
                     }
                     else
                     {
                         $CleanName = $thing.Name
+                        Write-Debug -Message ("CleanName set  to $CleanName")
                     }
                     
                     # Set the target folder based on the resolution
@@ -214,7 +216,7 @@ Foreach ($thing in $tld){
                         {$_ -le 480}{
                             Write-Debug -Message ('$_ ($VidRes) is ' + $_)
                             Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '480\' + $CleanName + '.' + $extension)
-                            ('Write-Host -Foregroundcolor green "Moving ' + $file.FullName + ' to ' + $tgtPath + '480\' + $CleanName + '.' + $extension) | Out-File $batFile -Encoding ascii -Append
+                            ('Write-Host -Foregroundcolor green Moving "' + $file.FullName + ' to ' + $tgtPath + '480\' + $CleanName + '.' + $extension) | Out-File $batFile -Encoding ascii -Append
                             ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '480\' + $CleanName + '.' + $extension + '"') | Out-File $batFile -Encoding ascii -Append
                             Break
                         }
