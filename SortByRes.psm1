@@ -218,25 +218,25 @@ Foreach ($thing in $tld){
                         {$_ -le 480}{
                             Write-Debug -Message ('$_ ($VidRes) is ' + $_)
                             Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '480\' + $CleanName + '.' + $extension)
-                            ("Write-Host -Foregroundcolor green 'Moving ' + $file.FullName + ' to ' + $tgtPath + '480\' + $CleanName + '.' + $extension") | Out-File $batFile -Encoding ascii -Append
+                            ("Write-Host -Foregroundcolor green 'Moving '" + $file.FullName + "' to '" + $tgtPath + "'480\'" + $CleanName + "'.'" + $extension) | Out-File $batFile -Encoding ascii -Append
                             ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '480\' + $CleanName + '.' + $extension + '"') | Out-File $batFile -Encoding ascii -Append
                             Break
                         }
                         {$_ -gt 480 -and $_ -le 720}{
                             Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '720\' + $CleanName + '.' + $extension)
-                            ("Write-Host -Foregroundcolor green 'Moving ' + $file.FullName + ' to ' + $tgtPath + '720\' + $CleanName + '.' + $extension") | Out-File $batFile -Encoding ascii -Append
+                            ("Write-Host -Foregroundcolor green 'Moving '" + $file.FullName + "' to '" + $tgtPath + "'720\'" + $CleanName + "'.'" + $extension) | Out-File $batFile -Encoding ascii -Append
                             ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '720\' + $CleanName + '.' + $extension + '"') | Out-File $batFile -Encoding ascii -Append
                             Break
                         }
                         {$_ -gt 720 -and $_ -le 1080}{
                             Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '1080\' + $CleanName + '.' + $extension)
-                            ("Write-Host -Foregroundcolor green 'Moving ' + $file.FullName + ' to ' + $tgtPath + '1080\' + $CleanName + '.' + $extension") | Out-File $batFile -Encoding ascii -Append
+                            ("Write-Host -Foregroundcolor green 'Moving '" + $file.FullName + "' to '" + $tgtPath + "'1080\'" + $CleanName + "'.'" + $extension) | Out-File $batFile -Encoding ascii -Append
                             ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '1080\' + $CleanName + '.' + $extension + '"') | Out-File $batFile -Encoding ascii -Append
                             Break
                         }
                         {$_ -gt 1080}{
                             Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '2160\' + $CleanName + '.' + $extension)
-                            ("Write-Host -Foregroundcolor green 'Moving ' + $file.FullName + ' to ' + $tgtPath + '2160\' + $CleanName + '.' + $extension") | Out-File $batFile -Encoding ascii -Append
+                            ("Write-Host -Foregroundcolor green 'Moving '" + $file.FullName + "' to '" + $tgtPath + "'2160\'" + $CleanName + "'.'" + $extension) | Out-File $batFile -Encoding ascii -Append
                             ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '2160\' + $CleanName + '.' + $extension + '"') | Out-File $batFile -Encoding ascii -Append
                             Break
                         }
@@ -265,25 +265,25 @@ Foreach ($thing in $tld){
             Switch ($VidRes -as [Int]){
                 {$_ -le 480}{
                     Write-Debug -Message ('Move-Item ' + $thing.FullName + ' ' + $tgtPath + '480\' + $thing.name)
-                    ("Write-Host -Foregroundcolor Green 'Moving ' + $thing.FullName + ' to ' + $tgtPath + '480\' + $thing.name") | Out-File process.ps1 -Encoding ascii -Append
+                    ("Write-Host -Foregroundcolor Green 'Moving '" + $thing.FullName + "' to '" + $tgtPath + "'480\'" + $thing.name) | Out-File process.ps1 -Encoding ascii -Append
                     ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '480\' + $thing.name + '"') | Out-File process.ps1 -Encoding ascii -Append
                     Break
                 }
                 {$_ -gt 480 -and $_ -le 720}{
                     Write-Debug -Message ('Move-Item ' + $thing.FullName + ' ' + $tgtPath + '720\' + $thing.name)
-                    ("Write-Host -Foregroundcolor Green 'Moving ' + $thing.FullName + ' to ' + $tgtPath + '720\' + $thing.name") | Out-File process.ps1 -Encoding ascii -Append
+                    ("Write-Host -Foregroundcolor Green 'Moving '" + $thing.FullName + "' to '" + $tgtPath + "'720\'" + $thing.name) | Out-File process.ps1 -Encoding ascii -Append
                     ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '720\' + $thing.name + '"') | Out-File process.ps1 -Encoding ascii -Append
                     Break
                 }
                 {$_ -gt 720 -and $_ -le 1080}{
                     Write-Debug -Message ('Move-Item ' + $thing.FullName + ' ' + $tgtPath + '1080\' + $thing.name)
-                    ("Write-Host -Foregroundcolor Green 'Moving ' + $thing.FullName + ' to ' + $tgtPath + '1080\' + $thing.name") | Out-File process.ps1 -Encoding ascii -Append
+                    ("Write-Host -Foregroundcolor Green 'Moving '" + $thing.FullName + "' to '" + $tgtPath + "'1080\'" + $thing.name) | Out-File process.ps1 -Encoding ascii -Append
                     ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '1080\' + $thing.name + '"') | Out-File process.ps1 -Encoding ascii -Append
                     Break
                 }
                 {$_ -gt 1080}{
                     Write-Debug -Message ('Move-Item ' + $thing.FullName + ' ' + $tgtPath + '2160\' + $thing.name)
-                    ("Write-Host -Foregroundcolor Green 'Moving ' + $thing.FullName + ' to ' + $tgtPath + '2160\' + $thing.name") | Out-File process.ps1 -Encoding ascii -Append
+                    ("Write-Host -Foregroundcolor Green 'Moving '" + $thing.FullName + "' to '" + $tgtPath + "'2160\'" + $thing.name) | Out-File process.ps1 -Encoding ascii -Append
                     ('Move-Item "' + $thing.FullName + '" "' + $tgtPath + '2160\' + $thing.name + '"') | Out-File process.ps1 -Encoding ascii -Append
                     Break
                 }
