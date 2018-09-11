@@ -156,7 +156,7 @@ function Get-FFMpeg-Cmd{
     # Get the top level folder
     Write-Debug -Message "Getting top level folder"
     try {
-        $tld = (Get-ChildItem $ckPath | sort-object)
+        $tld = (Get-Item $ckPath | sort-object)
     }
     catch {
         "Unable to get Top Level Folder: $ckPath"
@@ -178,8 +178,10 @@ function Get-FFMpeg-Cmd{
 
         Foreach ($thing in $tld){
             Write-Debug  -Message "Processing item: $thing"
+            # if thing is folder, get files in it
+            # else, process as file
             try {
-                Write-Host "Processing " $fldr.FullName
+                Write-Host "Processing " $thing.FullName
                 try {$files = Get-ChildItem -File -Recurse -LiteralPath $thing.FullName}
                 catch {Write-Host "Unable to get files from " + $thing.FullName}
                 # Write-Debug -Message "Files count:" + $files.Count()
@@ -187,7 +189,7 @@ function Get-FFMpeg-Cmd{
                 Foreach ($file in $files){
                     $fileFullName = $file.FullName.ToString()
                     Write-Debug -Message "fileFullName: $fileFullName"
-                    # Reset the base values based on the mode. This isn't optimal doing it hear, but I kinda pooched op the process and I don't want to fix it now.
+                    # Reset the base values based on the mode. This isn't optimal doing it here, but I kinda pooched op the process and I don't want to fix it now.
                     switch ($mode){
                         "sw"{
                             # swDecode + swTransform + swEncode
@@ -238,8 +240,9 @@ function Get-FFMpeg-Cmd{
 
                     # Assumes a 3 character extension is present. It shouldn't matter if there isn't one.
                     #$fileExt = $fileFullName.Substring((($fileFullName.Length)-3), 3)
-                    # save the extension.
-                    $fileExt = ($fileFullName.Substring(($fileFullName.ToString()).IndexOf(".")+1))
+                    # save the extension.   
+                    #$extension = ($file.Name.ToString()).Substring(($file.Name.ToString()).lastindexofany(".")+1)
+                    $fileExt = ($fileFullName.Substring(($fileFullName.ToString()).lastindexofany(".")+1))
                     if ($vidExtensions -match $fileExt){
                         $IsVid = $true
                     }
@@ -269,7 +272,7 @@ function Get-FFMpeg-Cmd{
                         # i.e. mpg, flv, avi, and vob
 
                         # look at the file, configure decode based on what ffprobe says about it.
-                        $ffprobeCmd = $ffprobeBase + $fileFullName
+                        $ffprobeCmd = $ffprobeBase + '"' + $fileFullName + '"'
                         Write-Debug -Message "ffprobecmd: $ffprobeCmd"
                         $srcCodec = Invoke-Expression $ffprobeCmd
                         Write-Debug -Message "srcCodec: $srcCodec"
@@ -369,12 +372,12 @@ function Get-FFMpeg-Cmd{
 
                 }
             catch {
-                 "No files found: " + $fldr.BaseName + ":" + $files.Length
+                 "No files found: " + $thing.BaseName + " Length:" + $files.Length
             }
         }
     }
     catch {
-        "Folder Loop broke on $fldr at line " + $_.InvocationInfo.ScriptLineNumber
+        "Folder Loop broke on $thing at line " + $_.InvocationInfo.ScriptLineNumber
     }
 
 }
