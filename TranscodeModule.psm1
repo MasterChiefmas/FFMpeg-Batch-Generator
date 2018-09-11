@@ -235,7 +235,7 @@ function Get-FFMpeg-Cmd{
                         }
                     }
                     # Set the input file
-                    $arrStrCmd[2] = "-i $fileFullName "
+                    $arrStrCmd[2] = "-i ""$fileFullName"" "
 
 
                     # Assumes a 3 character extension is present. It shouldn't matter if there isn't one.
