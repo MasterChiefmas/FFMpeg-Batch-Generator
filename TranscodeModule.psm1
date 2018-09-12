@@ -1,5 +1,5 @@
 # https://github.com/MasterChiefmas/FFMpeg-Batch-Generator
-function Get-FFMpeg-Cmd{
+function Get-FFMpeg-Batch{
 <# .SYNOPSIS
      Generates a batch file of FFmpeg commands
 .DESCRIPTION
@@ -187,7 +187,8 @@ function Get-FFMpeg-Cmd{
                 # Write-Debug -Message "Files count:" + $files.Count()
             
                 Foreach ($file in $files){
-                    $fileFullName = $file.FullName.ToString()
+                    Write-Host "Processing file $file"
+                    $fileFullName = $file.FullName.ToString()  
                     Write-Debug -Message "fileFullName: $fileFullName"
                     # Reset the base values based on the mode. This isn't optimal doing it here, but I kinda pooched op the process and I don't want to fix it now.
                     switch ($mode){
@@ -226,7 +227,7 @@ function Get-FFMpeg-Cmd{
                             # default to trying some dxva magic to enable qsv
                             # hwDecode + hwTransform + hwEncode
                             $ffmpegcmd = $ffmpegBase + $hwDecode + $inputFile + $hwTransform + $hwEncode + $outputFile
-                            # input codec
+                            # input codec   
                             $arrStrCmd[1] = '-hwaccel dxva2 -threads 1 -hwaccel_output_format dxva2_vld '
                             # scaling
                             $arrStrCmd[3] = '-vf "hwmap=derive_device=qsv,format=qsv,scale_qsv=640:360" '
@@ -254,7 +255,7 @@ function Get-FFMpeg-Cmd{
                         # Exclude files with the word 'sample' in them
                         try {
                             # Set the output file
-                            $arrStrCmd[6] = '"' + $tgtPath + $thing.BaseName.ToString().Trim() + '.mp4"'
+                            $arrStrCmd[6] = '"' + $tgtPath + $fileFullName.BaseName.ToString().Trim() + '.mp4"'
                             $NewName = $thing.BaseName.ToString().Trim() + ".mp4"
                             Write-Debug -Message "NewName: $NewName"
                         }
@@ -381,3 +382,44 @@ function Get-FFMpeg-Cmd{
     }
 
 }
+function Get-FFMpeg-Cmd{
+    <# .SYNOPSIS
+         Generates a batch file of FFmpeg commands
+    .DESCRIPTION
+         A function to generate a batch file with FFMpeg transcoding commands from a folder using a
+         pre-defined, tokenized command as the base. The default command is also setup to run at belownormal
+         priority.
+    
+        Parameters:
+        ckPath: Path to look for source videos. Not really doing anything with this right now, might not work/no support written yet.
+        mode: Force* writing ffmpeg commands to use specific approaches. Modes are hw/sw/hybrid:
+            hw: hardware decode, transform, and encode
+            sw: sofware decode, transform, and encode
+            hybrid: software decode, hardware transform and encode
+            auto: dynamically determine per file, based on ffprobe result what to do. generally, hw for h264 sources, sw for anything else.
+            * mode will not override behavior for specic formats, i.e. wmv will always be handled based on ffprobe results.
+        encodeTo: target codec to encode video to. h264, hevc
+        bitrate: target bitrate for video stream encode.
+    
+         Be sure to adjust variables in script as needed:
+         $tgtPath - where output files are written
+         $srcPath
+         There are multiple base commands, to allow for different encoding parameters based on the file type.
+    
+    
+         Tokens are:
+         srcPathReplace - where the full file path of a source video file will be inserted
+         tgtPathReplace - where the destination of output files will be inserted
+         These are replaced by the equivalent variables in the script. Yep, you have to change the
+         hardcode, because the script is assumed that you'll have a fairly static setup (i.e. almost
+         always writing to the same target location, so passing a path constantly for something
+         that doesn't change often is annoying to me)
+    
+    .NOTES
+         Author     : Jason Coleman - pobox@chiencorp.com
+        GitTest
+    
+    .LINK
+    
+    #>
+    
