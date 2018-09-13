@@ -5,7 +5,7 @@ function Get-FFMpeg-Batch{
 .DESCRIPTION
      A function to generate a batch file with FFMpeg transcoding commands from a folder using a
      pre-defined, tokenized command as the base. The default command is also setup to run at belownormal
-     priority.
+     priority. Depends on Get-FFMpeg-Cmd
 
     Parameters:
     ckPath: Path to look for source videos. Not really doing anything with this right now, might not work/no support written yet.
@@ -384,14 +384,12 @@ function Get-FFMpeg-Batch{
 }
 function Get-FFMpeg-Cmd{
     <# .SYNOPSIS
-         Generates a batch file of FFmpeg commands
+         Generates a DOS FFmpeg command for a file passed to the script
     .DESCRIPTION
-         A function to generate a batch file with FFMpeg transcoding commands from a folder using a
-         pre-defined, tokenized command as the base. The default command is also setup to run at belownormal
-         priority.
+        Generates a string that is for calling ffmpeg to encode the file passed to the script. 
     
         Parameters:
-        ckPath: Path to look for source videos. Not really doing anything with this right now, might not work/no support written yet.
+        FilePath: Path to look for source videos. Not really doing anything with this right now, might not work/no support written yet.
         mode: Force* writing ffmpeg commands to use specific approaches. Modes are hw/sw/hybrid:
             hw: hardware decode, transform, and encode
             sw: sofware decode, transform, and encode
@@ -406,20 +404,17 @@ function Get-FFMpeg-Cmd{
          $srcPath
          There are multiple base commands, to allow for different encoding parameters based on the file type.
     
-    
-         Tokens are:
-         srcPathReplace - where the full file path of a source video file will be inserted
-         tgtPathReplace - where the destination of output files will be inserted
-         These are replaced by the equivalent variables in the script. Yep, you have to change the
-         hardcode, because the script is assumed that you'll have a fairly static setup (i.e. almost
-         always writing to the same target location, so passing a path constantly for something
-         that doesn't change often is annoying to me)
-    
     .NOTES
          Author     : Jason Coleman - pobox@chiencorp.com
         GitTest
     
     .LINK
-    
     #>
+    Param(
+    [string]$ckPath=".\",
+    [string]$mode="hw",
+    [string]$encodeTo="h264",
+    [string]$bitrate="700k"
+    )
+}
     
