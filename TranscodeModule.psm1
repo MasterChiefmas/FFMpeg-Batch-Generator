@@ -190,6 +190,7 @@ function Get-FFMpeg-Batch{
                     Write-Host "Processing file $file"
                     $fileFullName = $file.FullName.ToString()  
                     Write-Debug -Message "fileFullName: $fileFullName"
+                    Write-Debug -Message "fileBaseName: $file"
                     # Reset the base values based on the mode. This isn't optimal doing it here, but I kinda pooched op the process and I don't want to fix it now.
                     switch ($mode){
                         "sw"{
@@ -243,7 +244,8 @@ function Get-FFMpeg-Batch{
                     #$fileExt = $fileFullName.Substring((($fileFullName.Length)-3), 3)
                     # save the extension.   
                     #$extension = ($file.Name.ToString()).Substring(($file.Name.ToString()).lastindexofany(".")+1)
-                    $fileExt = ($fileFullName.Substring(($fileFullName.ToString()).lastindexofany(".")+1))
+                    $fileExt = ($fileFullName.Substring(($fileFullName).lastindexofany(".")+1))
+                    Write-Debug -Message "fileExt set to: $fileExt"
                     if ($vidExtensions -match $fileExt){
                         $IsVid = $true
                     }
@@ -255,8 +257,9 @@ function Get-FFMpeg-Batch{
                         # Exclude files with the word 'sample' in them
                         try {
                             # Set the output file
-                            $arrStrCmd[6] = '"' + $tgtPath + $fileFullName.BaseName.ToString().Trim() + '.mp4"'
-                            $NewName = $thing.BaseName.ToString().Trim() + ".mp4"
+                            #$arrStrCmd[6] = '"' + $tgtPath + $fileFullName.BaseName.ToString().Trim() + '.mp4"'
+                            $arrStrCmd[6] = '"' + $tgtPath + $file + '"'
+                            $NewName = $arrStrCmd[6]
                             Write-Debug -Message "NewName: $NewName"
                         }
                         catch {
@@ -416,5 +419,15 @@ function Get-FFMpeg-Cmd{
     [string]$encodeTo="h264",
     [string]$bitrate="700k"
     )
+
+    
+    # base path for where transcode targets will be written
+    $tgtPath = "\\fs2\poolroot\croco\!recodes\"
+    # srcPath not needed? derivied from file path?
+    $srcPath
+
+    # FFPRobe line
+    $ffprobeBase = 'C:\ffmpeg\ffprobe.exe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 '
+
 }
     
