@@ -179,209 +179,217 @@ function Get-FFMpeg-Batch{
         }
         catch{"Failed to create new transcode.bat"}
 
+        If ($tld.GetType().Name -ne "DirectoryInfo"){
+            Write-Host -ForegroundColor Red "$tld is not a folder. Exiting."
+            Exit
+        }
+        # I suppose I can reasonably assume a folder at this point?
         Foreach ($thing in $tld){
             Write-Debug  -Message "Processing item: $thing"
             # if thing is folder, get files in it
             # else, process as file
-            try {
-                Write-Host "Processing " $thing.FullName
+            If ($thing.GetType().Name -eq "FileInfo"){
+                Write-Host -ForeGroundColor Green "DEBUG:Process $thing as a file"
+                $files = $thing
+            }
+            Else{
+                Write-Host -ForeGroundColor Green ("DEBUG:Process $thing as a folder (assumed):" + $thing.GetType().Name)
                 try {$files = Get-ChildItem -File -Recurse -LiteralPath $thing.FullName}
-                catch {Write-Host "Unable to get files from " + $thing.FullName}
-                # Write-Debug -Message "Files count:" + $files.Count()
+                catch {
+                    Write-Host "Unable to get files from " + $thing.FullName
+                    Continue
+                }
+            }
+            Write-Host "Processing " $thing.FullName
+            Foreach ($file in $files){
+                Write-Host "Processing file $file"
+                $fileFullName = $file.FullName.ToString()  
+                Write-Debug -Message "fileFullName: $fileFullName"
+                Write-Debug -Message "fileBaseName: " + $file.BaseName
+
+                # Assumes a 3 character extension is present. It shouldn't matter if there isn't one.
+                #$fileExt = $fileFullName.Substring((($fileFullName.Length)-3), 3)
+                # save the extension.   
+                #$extension = ($file.Name.ToString()).Substring(($file.Name.ToString()).lastindexofany(".")+1)
+                $fileExt = ($fileFullName.Substring(($fileFullName).lastindexofany(".")+1))
+                Write-Debug -Message "fileExt set to: $fileExt"
+                if ($vidExtensions -match $fileExt){
+                    $IsVid = $true
+                }
+                else {
+                    $IsVid = $false
+                }
+                Write-Debug "Isvid? $IsVid"
+
+                # Dynamic mode based on file extension?
+                # Reset the base values based on the mode. This isn't optimal doing it here, but I kinda pooched op the process and I don't want to fix it now.
+                switch ($mode){
+                    "sw"{
+                        # swDecode + swTransform + swEncode
+                        # $ffmpegcmd = $ffmpegBase + $swDecode + $inputFile + $swTransform + $swEncode + $outputFile
+                        # input codec
+                        $arrStrCmd[1] = $swDecode
+                        # scaling
+                        $arrStrCmd[3] = $swTransform
+                        # output codec
+                        $arrStrCmd[4] = $swEncode
             
-                Foreach ($file in $files){
-                    Write-Host "Processing file $file"
-                    $fileFullName = $file.FullName.ToString()  
-                    Write-Debug -Message "fileFullName: $fileFullName"
-                    Write-Debug -Message "fileBaseName: " + $file.BaseName
-
-                    # Reset the base values based on the mode. This isn't optimal doing it here, but I kinda pooched op the process and I don't want to fix it now.
-                    switch ($mode){
-                        "sw"{
-                            # swDecode + swTransform + swEncode
-                            $ffmpegcmd = $ffmpegBase + $swDecode + $inputFile + $swTransform + $swEncode + $outputFile
-                            # input codec
-                            $arrStrCmd[1] = $swDecode
-                            # scaling
-                            $arrStrCmd[3] = $swTransform
-                            # output codec
-                            $arrStrCmd[4] = $swEncode
-                
-                        }
-                        "hw"{
-                            # hwDecode + hwTransform + hwEncode
-                            $ffmpegcmd = $ffmpegBase + $hwDecode + $inputFile + $hwTransform + $hwEncode + $outputFile
-                            # input codec
-                            $arrStrCmd[1] = $hwDecode
-                            # scaling
-                            $arrStrCmd[3] = $hwTransform
-                            # output codec
-                            $arrStrCmd[4] = $hwEncode
-                        }
-                        "hybrid"{
-                            # swDecode + hybridTransform + hwEncode
-                            # $ffmpegcmd = $ffmpegBase + $swDecode + $inputFile + $hybridTransform + $hwEncode + $outputFile
-                            # input codec
-                            $arrStrCmd[1] = $swDecode
-                            # scaling
-                            $arrStrCmd[3] = '-load_plugin hevc_hw ' + $hybridTransform
-                            # output codec
-                            
-                            $arrStrCmd[4] = '-b:v 700k -c:v h264_qsv '
-                        }
-                        default{
-                            # default to trying some dxva magic to enable qsv
-                            # hwDecode + hwTransform + hwEncode
-                            $ffmpegcmd = $ffmpegBase + $hwDecode + $inputFile + $hwTransform + $hwEncode + $outputFile
-                            # input codec   
-                            $arrStrCmd[1] = '-hwaccel dxva2 -threads 1 -hwaccel_output_format dxva2_vld '
-                            # scaling
-                            $arrStrCmd[3] = '-vf "hwmap=derive_device=qsv,format=qsv,scale_qsv=640:360" '
-                            # output codec
-                            $arrStrCmd[4] = '-c:v h264_qsv -b:v 700k '
-                        }
                     }
-                    # Set the input file
-                    $arrStrCmd[2] = "-i ""$fileFullName"" "
-
-
-                    # Assumes a 3 character extension is present. It shouldn't matter if there isn't one.
-                    #$fileExt = $fileFullName.Substring((($fileFullName.Length)-3), 3)
-                    # save the extension.   
-                    #$extension = ($file.Name.ToString()).Substring(($file.Name.ToString()).lastindexofany(".")+1)
-                    $fileExt = ($fileFullName.Substring(($fileFullName).lastindexofany(".")+1))
-                    Write-Debug -Message "fileExt set to: $fileExt"
-                    if ($vidExtensions -match $fileExt){
-                        $IsVid = $true
+                    "hw"{
+                        # hwDecode + hwTransform + hwEncode
+                        # $ffmpegcmd = $ffmpegBase + $hwDecode + $inputFile + $hwTransform + $hwEncode + $outputFile
+                        # input codec
+                        $arrStrCmd[1] = $hwDecode
+                        # scaling
+                        $arrStrCmd[3] = $hwTransform
+                        # output codec
+                        $arrStrCmd[4] = $hwEncode
                     }
-                    else {
-                        $IsVid = $false
+                    "hybrid"{
+                        # swDecode + hybridTransform + hwEncode
+                        # $ffmpegcmd = $ffmpegBase + $swDecode + $inputFile + $hybridTransform + $hwEncode + $outputFile
+                        # input codec
+                        $arrStrCmd[1] = $swDecode
+                        # scaling
+                        $arrStrCmd[3] = '-load_plugin hevc_hw ' + $hybridTransform
+                        # output codec
+                        
+                        $arrStrCmd[4] = '-b:v 700k -c:v h264_qsv '
                     }
-                    Write-Debug "Isvid? $IsVid"
-                    if (($IsVid) -and -not ($fileFullName -match 'sample')){
-                        # Exclude files with the word 'sample' in them
-                        try {
-                            # Set the output file
-                            #$arrStrCmd[6] = '"' + $tgtPath + $fileFullName.BaseName.ToString().Trim() + '.mp4"'
-                            $arrStrCmd[6] = '"' + $tgtPath + $fileFullName.BaseName + '.mp4"'
-                            $NewName = $arrStrCmd[6]
-                            Write-Debug -Message "NewName: $NewName"
-                        }
-                        catch {
-                            "Unable to set the output file name"
-                        }
-                        #
-                        # Get the information about the file via ffprobe
-                        #
-                        # Generate transcode command statement, based on the file extension write it to the batch file
-                        # specifically, WMVs have a different command to process with.
-                        # Might add support later for HEVC or h.264 based on command line switch, for now, it's going to be hardcoding to the appropriate variable.
-                        # _codecReplace_
-                        # Still need handling for things that are more likely to have formats other then h.264 and wmv
-                        # i.e. mpg, flv, avi, and vob
+                    default{
+                        # default to trying some dxva magic to enable qsv
+                        # hwDecode + hwTransform + hwEncode
+                        # $ffmpegcmd = $ffmpegBase + $hwDecode + $inputFile + $hwTransform + $hwEncode + $outputFile
+                        # input codec   
+                        $arrStrCmd[1] = '-hwaccel dxva2 -threads 1 -hwaccel_output_format dxva2_vld '
+                        # scaling
+                        $arrStrCmd[3] = '-vf "hwmap=derive_device=qsv,format=qsv,scale_qsv=640:360" '
+                        # output codec
+                        $arrStrCmd[4] = '-c:v h264_qsv -b:v 700k '
+                    }
+                }
+                # Set the input file
+                $arrStrCmd[2] = "-i ""$fileFullName"" "
 
-                        # look at the file, configure decode based on what ffprobe says about it.
-                        $ffprobeCmd = $ffprobeBase + '"' + $fileFullName + '"'
-                        Write-Debug -Message "ffprobecmd: $ffprobeCmd"
-                        $srcCodec = Invoke-Expression $ffprobeCmd
-                        Write-Debug -Message "srcCodec: $srcCodec"
+                if (($IsVid) -and -not ($fileFullName -match 'sample')){
+                    # Exclude files with the word 'sample' in them
+                    try {
+                        # Set the output file
+                        #$arrStrCmd[6] = '"' + $tgtPath + $fileFullName.BaseName.ToString().Trim() + '.mp4"'
+                        $arrStrCmd[6] = '"' + $tgtPath + $fileFullName.BaseName + '.mp4"'
+                        $NewName = $arrStrCmd[6]
+                        Write-Debug -Message "NewName: $NewName"
+                    }
+                    catch {
+                        "Unable to set the output file name"
+                    }
+                    #
+                    # Get the information about the file via ffprobe
+                    #
+                    # Generate transcode command statement, based on the file extension write it to the batch file
+                    # specifically, WMVs have a different command to process with.
+                    # Might add support later for HEVC or h.264 based on command line switch, for now, it's going to be hardcoding to the appropriate variable.
+                    # _codecReplace_
+                    # Still need handling for things that are more likely to have formats other then h.264 and wmv
+                    # i.e. mpg, flv, avi, and vob
 
-                        switch ($srcCodec)
+                    # look at the file, configure decode based on what ffprobe says about it.
+                    $ffprobeCmd = $ffprobeBase + '"' + $fileFullName + '"'
+                    Write-Debug -Message "ffprobecmd: $ffprobeCmd"
+                    $srcCodec = Invoke-Expression $ffprobeCmd
+                    Write-Debug -Message "srcCodec: $srcCodec"
+
+                    switch ($srcCodec)
+                    {
+                        "wmv1"{
+                            Write-Debug -Message "Set WMV type to 1"
+                            #$transcode = $transcode -Replace "_codecReplace_", "wmv1"
+
+                            #video in
+                            $arrStrCmd[1] = $WMVDecode1
+                            # audio out
+                            $arrStrCmd[5] = $AudioEncode
+
+                        }
+                        "wmv2"{
+                            Write-Debug -Message "Set WMV type to 2"
+                            #$transcode = $transcode -Replace "_codecReplace_", "wmv2"
+                            #video in
+                            $arrStrCmd[1] = $WMVDecode2
+                            # audio out
+                            $arrStrCmd[5] = $AudioEncode
+                        }
+                        "wmv3"{
+                            Write-Debug -Message "Set WMV type to 3"
+                            #$transcode = $transcode -Replace "_codecReplace_", "wmv3"
+                            #video in
+                            $arrStrCmd[1] = $WMVDecode3
+                            # audio out
+                            $arrStrCmd[5] = $AudioEncode
+
+                        }
+                        "h264"
                         {
-                            "wmv1"{
-                                Write-Debug -Message "Set WMV type to 1"
-                                #$transcode = $transcode -Replace "_codecReplace_", "wmv1"
-
-                                #video in
-                                $arrStrCmd[1] = $WMVDecode1
-                                # audio out
-                                $arrStrCmd[5] = $AudioEncode
-
-                            }
-                            "wmv2"{
-                                Write-Debug -Message "Set WMV type to 2"
-                                #$transcode = $transcode -Replace "_codecReplace_", "wmv2"
-                                #video in
-                                $arrStrCmd[1] = $WMVDecode2
-                                # audio out
-                                $arrStrCmd[5] = $AudioEncode
-                            }
-                            "wmv3"{
-                                Write-Debug -Message "Set WMV type to 3"
-                                #$transcode = $transcode -Replace "_codecReplace_", "wmv3"
-                                #video in
-                                $arrStrCmd[1] = $WMVDecode3
-                                # audio out
-                                $arrStrCmd[5] = $AudioEncode
-
-                            }
-                            "h264"
-                            {
-                                Write-Debug -Message "Processing h264"
-                                # video in
-                                switch ($mode){
-                                    "hw"{
-                                        $arrStrCmd[1] = $hwDecode
-                                        $arrStrCmd[5] = $AudioCopy
-                                    }
-                                    "sw"{
-                                        $arrStrCmd[1] = $swDecode
-                                        $arrStrCmd[5] = $AudioCopy
-                                    }
-                                    default{
-                                        $arrStrCmd[1] = $hwDecode
-                                        $arrStrCmd[5] = $AudioCopy
-                                    }
+                            Write-Debug -Message "Processing h264"
+                            # video in
+                            switch ($mode){
+                                "hw"{
+                                    $arrStrCmd[1] = $hwDecode
+                                    $arrStrCmd[5] = $AudioCopy
+                                }
+                                "sw"{
+                                    $arrStrCmd[1] = $swDecode
+                                    $arrStrCmd[5] = $AudioCopy
+                                }
+                                default{
+                                    $arrStrCmd[1] = $hwDecode
+                                    $arrStrCmd[5] = $AudioCopy
                                 }
                             }
-                            default
-                            {
-                                # cop-out case, set everything to dxva2+h264 and hope for the best?
-                                Write-Debug -Message "Processing as default($srcCodec)"
-                                # $transCode = $ffmpegBase -Replace "srcPathReplace", $fileFullName
-                                # video in
-                                $arrStrCmd[1] = $hwDecode
-                                # audio out
-                                $arrStrCmd[5] = $AudioCopy
-                            }
                         }
-
-
-                        # codec is set; write out the processing command
-                        
-                        # I think I can ditch this chunk if the wmv processing above works.
-                        # if($fileExt -eq "wmv"){
-                        #     # process WMV
-                        #     $transCode = $ffmpegWMVBase -Replace "srcPathReplace", $fileFullName
-                        # }
-
-                        # $transCode = $ffmpegBase -Replace "srcPathReplace", $fileFullName
-                        # $transCodeSW = $ffmpeg_SW_Base -Replace "srcPathReplace", $fileFullName
-                        # $transcode = $transcode -Replace "tgtPathReplace", $NewName
-                        # $transCodeSW = $transCodeSW -Replace "tgtPathReplace", $NewName
-                        #                         if($fileExt -eq "wmv"){
-                        #                                 $transcode = $transcode -Replace "-c:a copy", "-c:a aac -b:a 128k"
-                        #                                 $transCodeSW = $transcode -Replace "-c:a copy", "-c:a aac -b:a 128k"
-                        #                         }
-                        # $transcode = $transcode -Replace "tgtPathReplace", $NewName
-                        Write-Debug -Message "Ffmpeg command:"; Write-Debug -Message "$arrStrCmd"
-                        'time /t'  | out-file transcode.bat -Encoding ascii -Append
-                        [system.String]::Join("", $arrStrCmd) | out-file transcode.bat -Encoding ascii -Append
-                        #$arrStrCmd | Out-File .\transcode.bat -Encoding ascii -Append
-                        'time /t'  | out-file transcode.bat -Encoding ascii -Append
-                        # /--- Old WMV Processing Code
-                        # $transCodeSW | out-file transcodeSW.bat -Encoding ascii -Append
+                        default
+                        {
+                            # cop-out case, set everything to dxva2+h264 and hope for the best?
+                            Write-Debug -Message "Processing as default($srcCodec)"
+                            # $transCode = $ffmpegBase -Replace "srcPathReplace", $fileFullName
+                            # video in
+                            $arrStrCmd[1] = $hwDecode
+                            # audio out
+                            $arrStrCmd[5] = $AudioCopy
+                        }
                     }
-                    else {
-                        # Vid had sample in the name, or doesn't have an allowed extension
-                        Write-Host "Sample file, or extension not allowed. Skipping $fileFullName"
-                        continue
-                    }
-                }
 
+
+                    # codec is set; write out the processing command
+                    
+                    # I think I can ditch this chunk if the wmv processing above works.
+                    # if($fileExt -eq "wmv"){
+                    #     # process WMV
+                    #     $transCode = $ffmpegWMVBase -Replace "srcPathReplace", $fileFullName
+                    # }
+
+                    # $transCode = $ffmpegBase -Replace "srcPathReplace", $fileFullName
+                    # $transCodeSW = $ffmpeg_SW_Base -Replace "srcPathReplace", $fileFullName
+                    # $transcode = $transcode -Replace "tgtPathReplace", $NewName
+                    # $transCodeSW = $transCodeSW -Replace "tgtPathReplace", $NewName
+                    #                         if($fileExt -eq "wmv"){
+                    #                                 $transcode = $transcode -Replace "-c:a copy", "-c:a aac -b:a 128k"
+                    #                                 $transCodeSW = $transcode -Replace "-c:a copy", "-c:a aac -b:a 128k"
+                    #                         }
+                    # $transcode = $transcode -Replace "tgtPathReplace", $NewName
+                    Write-Debug -Message "Ffmpeg command:"; Write-Debug -Message "$arrStrCmd"
+                    'time /t'  | out-file transcode.bat -Encoding ascii -Append
+                    [system.String]::Join("", $arrStrCmd) | out-file transcode.bat -Encoding ascii -Append
+                    #$arrStrCmd | Out-File .\transcode.bat -Encoding ascii -Append
+                    'time /t'  | out-file transcode.bat -Encoding ascii -Append
+                    # /--- Old WMV Processing Code
+                    # $transCodeSW | out-file transcodeSW.bat -Encoding ascii -Append
                 }
-            catch {
-                 "No files found: " + $thing.BaseName + " Length:" + $files.Length
+                else {
+                    # Vid had sample in the name, or doesn't have an allowed extension
+                    Write-Host "Sample file, or extension not allowed. Skipping $fileFullName"
+                    continue
+                }
             }
         }
     }
