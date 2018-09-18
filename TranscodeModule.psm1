@@ -221,7 +221,12 @@ function Get-FFMpeg-Batch{
                 }
                 Write-Debug "Isvid? $IsVid"
 
-                # Dynamic mode based on file extension?
+                # Dynamic mode based on file extension
+                switch ($fileExt){
+                    "wmv"{$mode='sw'}
+                    "mp4"{$mode='hw'}
+                    default{$mode='sw'}
+                }
                 # Reset the base values based on the mode. This isn't optimal doing it here, but I kinda pooched op the process and I don't want to fix it now.
                 switch ($mode){
                     "sw"{
