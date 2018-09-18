@@ -9,12 +9,6 @@ function Get-FFMpeg-Batch{
 
     Parameters:
     ckPath: Path to look for source videos. Not really doing anything with this right now, might not work/no support written yet.
-    mode: Force* writing ffmpeg commands to use specific approaches. Modes are hw/sw/hybrid:
-        hw: hardware decode, transform, and encode
-        sw: sofware decode, transform, and encode
-        hybrid: software decode, hardware transform and encode
-        auto: dynamically determine per file, based on ffprobe result what to do. generally, hw for h264 sources, sw for anything else.
-        * mode will not override behavior for specic formats, i.e. wmv will always be handled based on ffprobe results.
     encodeTo: target codec to encode video to. h264, hevc
     bitrate: target bitrate for video stream encode.
 
@@ -22,6 +16,7 @@ function Get-FFMpeg-Batch{
      $tgtPath - where output files are written
      $srcPath
      There are multiple base commands, to allow for different encoding parameters based on the file type.
+
 
 
      Tokens are:
@@ -41,7 +36,6 @@ function Get-FFMpeg-Batch{
 #>
     Param(
     [string]$Path=".\",
-    [string]$mode="hw",
     [string]$encodeTo="h264",
     [string]$bitrate="700k"
     )
@@ -66,6 +60,12 @@ function Get-FFMpeg-Batch{
     Write-Debug -Message "EncodeMode:$mode"
 
 
+    # Processing mode (hybrid, hw, sw)
+    # mode: Force* writing ffmpeg commands to use specific approaches. Modes are hw/sw/hybrid:
+    # hw: hardware decode, transform, and encode
+    # sw: sofware decode, transform, and encode
+    # hybrid: software decode, hardware transform and encode
+    [string]$mode
     
     # base path for where transcode targets will be written
     $tgtPath = "\\fs2\poolroot\croco\!recodes\"
@@ -205,7 +205,7 @@ function Get-FFMpeg-Batch{
                 Write-Host "Processing file $file"
                 $fileFullName = $file.FullName.ToString()  
                 Write-Debug -Message "fileFullName: $fileFullName"
-                Write-Debug -Message "fileBaseName: " + $file.BaseName
+                Write-Debug -Message ("fileBaseName: " + $file.BaseName)
 
                 # Assumes a 3 character extension is present. It shouldn't matter if there isn't one.
                 #$fileExt = $fileFullName.Substring((($fileFullName.Length)-3), 3)
@@ -276,7 +276,7 @@ function Get-FFMpeg-Batch{
                     try {
                         # Set the output file
                         #$arrStrCmd[6] = '"' + $tgtPath + $fileFullName.BaseName.ToString().Trim() + '.mp4"'
-                        $arrStrCmd[6] = '"' + $tgtPath + $fileFullName.BaseName + '.mp4"'
+                        $arrStrCmd[6] = '"' + $tgtPath + $file.BaseName + '.mp4"'
                         $NewName = $arrStrCmd[6]
                         Write-Debug -Message "NewName: $NewName"
                     }
@@ -395,6 +395,7 @@ function Get-FFMpeg-Batch{
     }
     catch {
         "Folder Loop broke on $thing at line " + $_.InvocationInfo.ScriptLineNumber
+        "Error is: " + $Error[0]
     }
 
 }
