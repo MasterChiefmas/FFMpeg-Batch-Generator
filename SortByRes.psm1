@@ -1,5 +1,8 @@
 # https://github.com/MasterChiefmas/FFMpeg-Batch-Generator
 
+# IDEA: Need a size based sorter for the SD res stuff that's already encoded well but is large due to length.
+# Maybe something lie, runtime > 60mins where size > 1GB?
+# or a sliding scale...mins/MB? figure out what seems reasonable. Reduces to ^^^
 
 function GetVidRes{
     # Get params
@@ -157,6 +160,8 @@ Foreach ($thing in $tld){
             $files = Get-ChildItem -File -Recurse -Include "*.mkv","*.mp4","*.avi","*.mpeg","*.mov","*.m4v","*.flv","*.wmv" "$thing"
 
             # Log any folders that had more then 1 video file
+            # BUG: I think tagging as multi-video is excluding the sample check. maybe by design originally. I should be able to account for that though.
+            # If video count is 2, check for sample, otherwise multi? 
             Write-Debug -Message ("Checking the file counts")
 			If ($files.Count -ge 2) {
 				('Move-Item "' + $thing.FullName + '" "' + $tgtPath + 'MultiVideoFolders\' + '"') | Out-File MultiVideoFolderList.ps1 -Encoding ascii -Append

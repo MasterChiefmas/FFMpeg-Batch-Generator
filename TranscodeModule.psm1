@@ -301,7 +301,7 @@ function Get-FFMpeg-Batch{
                                 # audio out
                                 $arrStrCmd[5] = $AudioEncode
                             }
-                            "wvm3"{
+                            "wmv3"{
                                 Write-Debug -Message "Set WMV type to 3"
                                 #$transcode = $transcode -Replace "_codecReplace_", "wmv3"
                                 #video in
@@ -332,7 +332,7 @@ function Get-FFMpeg-Batch{
                             default
                             {
                                 # cop-out case, set everything to dxva2+h264 and hope for the best?
-                                Write-Debug -Message "Processing as default"
+                                Write-Debug -Message "Processing as default($srcCodec)"
                                 # $transCode = $ffmpegBase -Replace "srcPathReplace", $fileFullName
                                 # video in
                                 $arrStrCmd[1] = $hwDecode
