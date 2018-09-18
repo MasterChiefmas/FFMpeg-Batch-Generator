@@ -40,7 +40,7 @@ function Get-FFMpeg-Batch{
 
 #>
     Param(
-    [string]$ckPath=".\",
+    [string]$Path=".\",
     [string]$mode="hw",
     [string]$encodeTo="h264",
     [string]$bitrate="700k"
@@ -49,11 +49,11 @@ function Get-FFMpeg-Batch{
 
     #### Startup Checks ####        
     Try{
-        $ckPath = Read-Host "Path to encode(default to current)"
+        $Path = Read-Host "Path to encode(default to current)"
         # Set default if no response
-        If (!$ckPath){$ckPath = ".\"}
+        If (!$Path){$Path = ".\"}
         # Validate path
-        If (!(Test-Path $ckPath)){
+        If (!(Test-Path $Path)){
             Write-Host "Path not found"
         }
     }
@@ -62,7 +62,7 @@ function Get-FFMpeg-Batch{
         Exit
     }
 
-    Write-Debug -Message "Processing files in $ckPath"
+    Write-Debug -Message "Processing files in $Path"
     Write-Debug -Message "EncodeMode:$mode"
 
 
@@ -78,18 +78,19 @@ function Get-FFMpeg-Batch{
     # $ffmpeg_SW_Base software decoder in case the hardware decoder has issues, which seems to happen every so often
     #$ffmpeg_SW_Base = 'rem start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe -hwaccel qsv -i "srcPathReplace" -init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" -b:v 700k -c:v h264_qsv -c:a copy -y "' + $tgtPath + 'tgtPathReplace"'
 
-
     [string]$swDecode = '-c:v h264 '
     [string]$hwDecode = '-hwaccel qsv -c:v h264_qsv '
+    # 1 per type, it's a bit wasteful in a way, but it's less annoying then search/replace all the time just for the codec.
+    [string]$WMVDecode1 = '-c:v wmv1 '
+    [string]$WMVDecode2 = '-c:v wmv2 '
+    [string]$WMVDecode3 = '-c:v wmv3 '
+
     [string]$swTransform = '-vf "scale=640:360" '
     [string]$hwTransform = '-vf "scale_qsv=640:360" '
     [string]$hybridTransform = '-init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" '
     # Confiig values for all WMV, cause WMV is annoying to work with
     [string]$WMVTransform = '-init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" '
-    # 1 per type, it's a bit wasteful in a way, but it's less annoying then search/replace all the time just for the codec.
-    [string]$WMVDecode1 = '-hwaccel qsv -c:v wmv1 '
-    [string]$WMVDecode2 = '-hwaccel qsv -c:v wmv2 '
-    [string]$WMVDecode3 = '-hwaccel qsv -c:v wmv3 '
+
     [string]$WMVEncodeVid = '-b:v 700k -c:v h264_qsv '
     [string]$WMVEncodeAud = '-c:a aac -b:a 96k '
     [string]$swEncode = '-c:v libx264 -preset superfast -b:v 700k '
@@ -97,6 +98,7 @@ function Get-FFMpeg-Batch{
     [string]$AudioCopy = ' -c:a copy '
     # hardware encoding is currently locked to h264. Passed param handling needed, or values passed changed to ffmpeg values to allow changing it.
     [string]$hwEncode = '-c:v h264_qsv -b:v 700k '
+
     [string]$ffmpegcmd = ''
     [string]$inputFile = '-i "srcPathReplace" '
     # add code to adjust audio codec as needed (i.e. WMV source)
@@ -156,10 +158,11 @@ function Get-FFMpeg-Batch{
     # Get the top level folder
     Write-Debug -Message "Getting top level folder"
     try {
-        $tld = (Get-Item $ckPath | sort-object)
+        #$tld = (Get-Item $Path | sort-object)
+        $tld = Get-Item $Path
     }
     catch {
-        "Unable to get Top Level Folder: $ckPath"
+        "Unable to get Top Level Folder: $Path"
     }
 
     # Foreach ($item in $tld){
@@ -171,7 +174,7 @@ function Get-FFMpeg-Batch{
     # # Write-Host "Folder Count:" $fldr
     try {
         try {
-            New-Item -Force .\transcode.bat
+            New-Item -Force .\transcode.bat | Out-Null
             "" | Out-File .\transcode.bat -Encoding ascii -Append
         }
         catch{"Failed to create new transcode.bat"}
@@ -190,39 +193,41 @@ function Get-FFMpeg-Batch{
                     Write-Host "Processing file $file"
                     $fileFullName = $file.FullName.ToString()  
                     Write-Debug -Message "fileFullName: $fileFullName"
-                    Write-Debug -Message "fileBaseName: $file"
+                    Write-Debug -Message "fileBaseName: " + $file.BaseName
+
                     # Reset the base values based on the mode. This isn't optimal doing it here, but I kinda pooched op the process and I don't want to fix it now.
                     switch ($mode){
                         "sw"{
                             # swDecode + swTransform + swEncode
                             $ffmpegcmd = $ffmpegBase + $swDecode + $inputFile + $swTransform + $swEncode + $outputFile
                             # input codec
-                            $arrStrCmd[1] = '-hwaccel dxva2 threads 1 '
+                            $arrStrCmd[1] = $swDecode
                             # scaling
-                            $arrStrCmd[3] = '-vf "scale_qsv=640:360" '
+                            $arrStrCmd[3] = $swTransform
                             # output codec
-                            $arrStrCmd[4] = '-b:v 700k -c:v h264 '
+                            $arrStrCmd[4] = $swEncode
                 
                         }
                         "hw"{
                             # hwDecode + hwTransform + hwEncode
                             $ffmpegcmd = $ffmpegBase + $hwDecode + $inputFile + $hwTransform + $hwEncode + $outputFile
                             # input codec
-                            $arrStrCmd[1] = '-hwaccel qsv '
+                            $arrStrCmd[1] = $hwDecode
                             # scaling
-                            $arrStrCmd[3] = '-vf "scale_qsv=640:360" '
+                            $arrStrCmd[3] = $hwTransform
                             # output codec
-                            $arrStrCmd[4] = '-b:v 700k -c:v h264_qsv '
+                            $arrStrCmd[4] = $hwEncode
                         }
                         "hybrid"{
                             # swDecode + hybridTransform + hwEncode
-                            $ffmpegcmd = $ffmpegBase + $swDecode + $inputFile + $hybridTransform + $hwEncode + $outputFile
+                            # $ffmpegcmd = $ffmpegBase + $swDecode + $inputFile + $hybridTransform + $hwEncode + $outputFile
                             # input codec
-                            $arrStrCmd[1] = ' -hwaccel dxva2 threads 1 '
+                            $arrStrCmd[1] = $swDecode
                             # scaling
-                            $arrStrCmd[3] = $hybridTransform
+                            $arrStrCmd[3] = '-load_plugin hevc_hw ' + $hybridTransform
                             # output codec
-                            $arrStrCmd[4] = '-load_plugin hevc_hw -b:v 700k -c:v h264_qsv '
+                            
+                            $arrStrCmd[4] = '-b:v 700k -c:v h264_qsv '
                         }
                         default{
                             # default to trying some dxva magic to enable qsv
@@ -258,7 +263,7 @@ function Get-FFMpeg-Batch{
                         try {
                             # Set the output file
                             #$arrStrCmd[6] = '"' + $tgtPath + $fileFullName.BaseName.ToString().Trim() + '.mp4"'
-                            $arrStrCmd[6] = '"' + $tgtPath + $file + '"'
+                            $arrStrCmd[6] = '"' + $tgtPath + $fileFullName.BaseName + '.mp4"'
                             $NewName = $arrStrCmd[6]
                             Write-Debug -Message "NewName: $NewName"
                         }
@@ -414,7 +419,7 @@ function Get-FFMpeg-Cmd{
     .LINK
     #>
     Param(
-    [string]$ckPath=".\",
+    [string]$Path=".\",
     [string]$mode="hw",
     [string]$encodeTo="h264",
     [string]$bitrate="700k"
