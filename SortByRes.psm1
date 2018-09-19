@@ -125,7 +125,7 @@ catch {
 
 # Establish the batch file to store the processing commands...
 try {
-    New-Item -Force .\MoveProcessedFolders.ps1
+    New-Item -Force .\MoveProcessedFolders.ps1 | Out-Null
     "" | Out-File .\MoveProcessedFolders.ps1 -Encoding ascii -Append
 }
 catch {
@@ -158,6 +158,7 @@ Foreach ($thing in $tld){
             # Get video files from the current folder
             Write-Debug -Message ("Getting files from the subfolder")
             $files = Get-ChildItem -File -Recurse -Include "*.mkv","*.mp4","*.avi","*.mpeg","*.mov","*.m4v","*.flv","*.wmv" "$thing"
+            Write-Debug -Message ("Number of files:" + ($files | Measure-Object | %{$_.Count}))
 
             # Log any folders that had more then 1 video file
             # BUG: I think tagging as multi-video is excluding the sample check. maybe by design originally. I should be able to account for that though.
