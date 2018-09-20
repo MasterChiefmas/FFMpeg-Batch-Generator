@@ -220,6 +220,7 @@ Foreach ($thing in $tld){
                     # Generate the filename used when moving the file, and clean up common extraneous stuff
                     If (($thing.Name.ToLower().IndexOf(".xxx")) -gt 0){
                         $CleanName = $thing.Name.Substring(0,$thing.Name.ToLower().IndexOf(".xxx"))
+                        $CleanName = $CleanName -replace "'", "''"
                         Write-Debug -Message ("CleanName scrubbed to $CleanName")
                     }
                     else
