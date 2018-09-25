@@ -186,7 +186,7 @@ Foreach ($thing in $tld){
 
             foreach ($file in $files){
                 # Everyone gets added to the leftovers file
-                'Removing ' + $file.FullName | Out-File "RemoveLeftOvers.ps1" -Encoding ascii -Append
+                ('Write-Host -ForegroundColor Green "Removing ' + $file.FullName + '"')| Out-File "RemoveLeftOvers.ps1" -Encoding ascii -Append
                 ('Remove-Item -LiteralPath "' + $file.FullName + '" -ErrorAction SilentlyContinue') | Out-File "RemoveLeftOvers.ps1" -Encoding ascii -Append
         
                 # Not needed any more? Everyone is in the leftovers file...
