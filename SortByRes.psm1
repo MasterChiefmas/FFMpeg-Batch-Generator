@@ -111,6 +111,9 @@ If (Test-Path .\MultiVideoFolderList.ps1){
 If (Test-Path .\RemoveItems.ps1){
     Remove-item .\RemoveItems.ps1
 }
+If (Test-Path .\RemoveLeftovers.ps1){
+    Remove-item .\RemoveLeftovers.ps1
+}
 
 # Get the top level folder to sort
 Write-Debug -Message "Getting top level folder"
@@ -260,6 +263,10 @@ Foreach ($thing in $tld){
                             Write-Host -ForegroundColor Red "Panic! I don't know what to do with $file"
                         }
                     }
+
+                    # Everyone gets added to the leftovers file
+                    'Removing ' + $file.FullName | Out-File "RemoveLeftOvers.ps1" -Encoding ascii -Append
+                    ('Remove-Item -LiteralPath "' + $file.FullName + '" -ErrorAction SilentlyContinue') | Out-File "RemoveLeftOvers.ps1" -Encoding ascii -Append
         
                 }                
             }

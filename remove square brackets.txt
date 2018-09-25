@@ -8,5 +8,13 @@ get-childitem | ForEach-Object {
      Move-Item -LiteralPath $_.name $_.name.Replace("]",")")
      }
 
+-- Get-ChildItem *.txt | Rename-Item -NewName { $_.name -Replace '\.txt$','.log' }
+get-childitem | Rename-Item -NewName { $_.name -Replace '[','(' }
+get-childitem | Rename-Item -NewName { $_.name -Replace "]",")" }
+
+get-childitem  | ForEach-Object { Rename-Item -LiteralPath $_.FullName -NewName ($_.name -Replace '\[','(') }
+get-childitem  | ForEach-Object { Rename-Item -LiteralPath $_.FullName -NewName ($_.name -Replace '\]',']') }
+
+
 get-childitem | ForEach-Object { Move-Item -LiteralPath $_.name $_.name.Replace("[","(")}
 get-childitem | ForEach-Object { Move-Item -LiteralPath $_.name $_.name.Replace("]",")")}
