@@ -1,9 +1,12 @@
 get-childitem | ForEach-Object {
-    Write-Host -ForegroundColor Green $_.name
+    If ($_.Name -Match "\["){
+    Write-Host -ForegroundColor Green "Renaming $_.name"  
+    }
+    
      Move-Item -LiteralPath $_.name $_.name.Replace("[","(")
      }
 
-get-childitem | ForEach-Object {
+get-childitem *]* | ForEach-Object {
     Write-Host -ForegroundColor Green $_.name
      Move-Item -LiteralPath $_.name $_.name.Replace("]",")")
      }
@@ -12,9 +15,19 @@ get-childitem | ForEach-Object {
 get-childitem | Rename-Item -NewName { $_.name -Replace '[','(' }
 get-childitem | Rename-Item -NewName { $_.name -Replace "]",")" }
 
+get-childitem  | ForEach-Object { Rename-Item -LiteralPath $_.FullName -NewName ($_.name -Replace '\[','(') -WhatIf }
+get-childitem  | ForEach-Object { Rename-Item -LiteralPath $_.FullName -NewName ($_.name -Replace '\]',')') -WhatIf }
+
 get-childitem  | ForEach-Object { Rename-Item -LiteralPath $_.FullName -NewName ($_.name -Replace '\[','(') }
-get-childitem  | ForEach-Object { Rename-Item -LiteralPath $_.FullName -NewName ($_.name -Replace '\]',']') }
+get-childitem  | ForEach-Object { Rename-Item -LiteralPath $_.FullName -NewName ($_.name -Replace '\]',')') }
 
 
 get-childitem | ForEach-Object { Move-Item -LiteralPath $_.name $_.name.Replace("[","(")}
 get-childitem | ForEach-Object { Move-Item -LiteralPath $_.name $_.name.Replace("]",")")}
+
+
+move-item -literalpath $_.name ($_.name -replace '\[.*\]', '')
+move-item -literalpath $_.name ($_.name -replace '\[.*', '')
+
+
+ get-childitem  | foreach { move-item -literalpath $_.name ($_.name -replace '\[.*', '')}

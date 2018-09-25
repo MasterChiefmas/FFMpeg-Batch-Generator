@@ -8,7 +8,6 @@ function Get-FFMpeg-Batch{
      priority. Depends on Get-FFMpeg-Cmd
 
     Parameters:
-    ckPath: Path to look for source videos. Not really doing anything with this right now, might not work/no support written yet.
     encodeTo: target codec to encode video to. h264, hevc
     bitrate: target bitrate for video stream encode.
 
