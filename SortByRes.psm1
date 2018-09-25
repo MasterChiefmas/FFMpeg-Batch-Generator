@@ -184,11 +184,17 @@ Foreach ($thing in $tld){
             ('Move-Item "' + $thing.FullName + '" "' + $processedPath + '"') | Out-File MoveProcessedFolders.ps1 -Encoding ascii -Append
 
             foreach ($file in $files){
+                # Everyone gets added to the leftovers file
+                'Removing ' + $file.FullName | Out-File "RemoveLeftOvers.ps1" -Encoding ascii -Append
+                ('Remove-Item -LiteralPath "' + $file.FullName + '" -ErrorAction SilentlyContinue') | Out-File "RemoveLeftOvers.ps1" -Encoding ascii -Append
+        
+                # Not needed any more? Everyone is in the leftovers file...
                 # Queue for removal if 'sample' is in the name
                 If ($file.FullName -match 'sample'){
-                    Write-Host 'Queue for deletion ' $file.FullName ' because it looks like a sample'
+                    # Changed to skip if it's sample, that's all.
+                    # Write-Host 'Queue for deletion ' $file.FullName ' because it looks like a sample'
                     # Delete these
-                    ('Remove-Item "' + $file.FullName + '"') | Out-File ".\RemoveItems.ps1" -Encoding ascii -Append
+                    # ('Remove-Item "' + $file.FullName + '"') | Out-File ".\RemoveItems.ps1" -Encoding ascii -Append
                     continue
                 }
                 # Processing video file
@@ -264,10 +270,7 @@ Foreach ($thing in $tld){
                         }
                     }
 
-                    # Everyone gets added to the leftovers file
-                    'Removing ' + $file.FullName | Out-File "RemoveLeftOvers.ps1" -Encoding ascii -Append
-                    ('Remove-Item -LiteralPath "' + $file.FullName + '" -ErrorAction SilentlyContinue') | Out-File "RemoveLeftOvers.ps1" -Encoding ascii -Append
-        
+
                 }                
             }
         }
