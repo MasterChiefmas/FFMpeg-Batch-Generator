@@ -181,6 +181,7 @@ Foreach ($thing in $tld){
 
             # Write out command to move the folder to processed folders area
             Write-Debug -Message ("Writing the command to move processed folders...")
+            ('Write-Host -Foregroundcolor Green "Moving folder ' + $thing.FullName + '" to "' + $processedPath + '"') | Out-File MoveProcessedFolders.ps1 -Encoding ascii -Append
             ('Move-Item "' + $thing.FullName + '" "' + $processedPath + '"') | Out-File MoveProcessedFolders.ps1 -Encoding ascii -Append
 
             foreach ($file in $files){
