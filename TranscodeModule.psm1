@@ -7,6 +7,8 @@ function Get-FFMpeg-Batch{
      pre-defined, tokenized command as the base. The default command is also setup to run at belownormal
      priority. Depends on Get-FFMpeg-Cmd
 
+     A batch file is generated because it turns out spawning a command line task out in Powershell is really kludgey and unreliable.
+
     Parameters:
     encodeTo: target codec to encode video to. h264, hevc
     bitrate: target bitrate for video stream encode.
@@ -30,13 +32,18 @@ function Get-FFMpeg-Batch{
      Author     : Jason Coleman - pobox@chiencorp.com
     GitTest
 
+    TODO:
+     Add "-movflags +faststart" as default encode option?  (Re-organizes resulting file into a fast streaming format by moving metadata packets to the front of the video instead of having them scattered or at the end)
+     This option will add some time, probably however long it takes to recopy the file (pass to extract all the meta data, and write at the beginning, followed by copying all the data). But do I care?
 .LINK
 
 #>
     Param(
     [string]$Path=".\",
     [string]$encodeTo="h264",
-    [string]$bitrate="700k"
+    [string]$bitrate="700k",
+    [string]$decMode="hw",
+    [string]$encMode="hw"
     )
 
 
@@ -59,11 +66,7 @@ function Get-FFMpeg-Batch{
     Write-Debug -Message "EncodeMode:$mode"
 
 
-    # Processing mode (hybrid, hw, sw)
-    # mode: Force* writing ffmpeg commands to use specific approaches. Modes are hw/sw/hybrid:
-    # hw: hardware decode, transform, and encode
-    # sw: sofware decode, transform, and encode
-    # hybrid: software decode, hardware transform and encode
+    # Configuration of the encode and decode modes separated out into their own things to allow mix and match configuration.
     [string]$mode
     
     # base path for where transcode targets will be written
@@ -382,10 +385,11 @@ function Get-FFMpeg-Batch{
                     #                         }
                     # $transcode = $transcode -Replace "tgtPathReplace", $NewName
                     Write-Debug -Message "Ffmpeg command:"; Write-Debug -Message "$arrStrCmd"
-                    'time /t'  | out-file transcode.bat -Encoding ascii -Append
+                    'time /t >> log.txt'  | out-file transcode.bat -Encoding ascii -Append
+                    'echo ' + $fileFullName + ' >> log.txt'  | out-file transcode.bat -Encoding ascii -Append
                     [system.String]::Join("", $arrStrCmd) | out-file transcode.bat -Encoding ascii -Append
                     #$arrStrCmd | Out-File .\transcode.bat -Encoding ascii -Append
-                    'time /t'  | out-file transcode.bat -Encoding ascii -Append
+                    'time /t >> log.txt'  | out-file transcode.bat -Encoding ascii -Append
                     # /--- Old WMV Processing Code
                     # $transCodeSW | out-file transcodeSW.bat -Encoding ascii -Append
                 }
