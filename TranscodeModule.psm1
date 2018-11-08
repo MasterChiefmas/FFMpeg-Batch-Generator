@@ -1,4 +1,29 @@
 # https://github.com/MasterChiefmas/FFMpeg-Batch-Generator
+
+Function RemoveBrackets(){
+<# .SYNOPSIS
+     Replace square brackets in file system names with parenthesis
+.DESCRIPTION
+    Square brackets can cause problems if they are in the name of a file system object, in particular, for PowerSheel. This will seek things out and replace them with the equal parenthesis
+.NOTES
+     Author     : Jason Coleman - pobox@chiencorp.com
+    GitTest
+
+    TODO:
+.LINK
+
+#>
+[string]$newName
+    get-childitem | ForEach-Object {
+        Write-Host "Checking $_"
+        If (($_.Name -Match "\[") -or ($_.Name -Match "\]")){
+            Write-Host -ForegroundColor Yellow "Brackets found in $_.name, replacing..."
+            $newName = $_.name.Replace("[","(")
+            $newName = $newName.Replace("]",")")
+            Move-Item -LiteralPath $_.name $newName
+        }
+    }
+}
 function Get-FFMpeg-Batch{
 <# .SYNOPSIS
      Generates a batch file of FFmpeg commands
