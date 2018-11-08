@@ -460,20 +460,63 @@ function Get-FFMpeg-Cmd{
     .LINK
     #>
     Param(
-    [string]$Path=".\",
-    [string]$mode="hw",
+    [string]$file="",
+    [string]$mode="",
     [string]$encodeTo="h264",
-    [string]$bitrate="700k"
+    [string]$bitrate="700k",
+    [string]$tgtPath = "\\fs2\poolroot\croco\!recodes\"
     )
 
-    
-    # base path for where transcode targets will be written
-    $tgtPath = "\\fs2\poolroot\croco\!recodes\"
-    # srcPath not needed? derivied from file path?
-    $srcPath
 
-    # FFPRobe line
+    # Array that the command string is constructed in
+    $arrStrCmd = New-Object string[] 7
+    $arrStrCmd[0] = 'start /belownormal /WAIT C:\ffmpeg\ffmpeg.exe '
+    $arrStrCmd[1] = 'Input Codec '
+    $arrStrCmd[2] = 'Input File '
+    $arrStrCmd[3] = 'Scaler '
+    $arrStrCmd[4] = 'Encode Video Codec '
+    $arrStrCmd[5] = 'Encode Audio Codec '
+    $arrStrCmd[6] = 'Output File '
+
+    # Possible values to build commands with
+    # Software Modes
+
+    # Hardware Modes
+
+
+    # Settings
+    
+    [string]$swDecode = '-c:v h264 '
+    [string]$hwDecode = '-hwaccel qsv -c:v h264_qsv '
+    # 1 per type, it's a bit wasteful in a way, but it's less annoying then search/replace all the time just for the codec.
+    [string]$WMVDecode1 = '-c:v wmv1 '
+    [string]$WMVDecode2 = '-c:v wmv2 '
+    [string]$WMVDecode3 = '-c:v wmv3 '
+
+    [string]$swTransform = '-vf "scale=640:360" '
+    [string]$hwTransform = '-vf "scale_qsv=640:360" '
+    [string]$hybridTransform = '-init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" '
+    # Confiig values for all WMV, cause WMV is annoying to work with
+    [string]$WMVTransform = '-init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" '
+
+    [string]$WMVEncodeVid = "-b:v $bitrate -c:v h264_qsv "
+    [string]$WMVEncodeAud = '-c:a aac -b:a 96k '
+    [string]$swEncode = '-c:v libx264 -preset superfast -b:v $bitrate '
+    [string]$AudioEncode = ' -c:a aac -b:a 96k '
+    [string]$AudioCopy = ' -c:a copy '
+    # hardware encoding is currently locked to h264. Passed param handling needed, or values passed changed to ffmpeg values to allow changing it.
+    [string]$hwEncode = '-c:v h264_qsv -b:v $bitrate '
+
+
+    # FFPRobe line used to get the video codec that the source file is encoded with.
     $ffprobeBase = 'C:\ffmpeg\ffprobe.exe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 '
 
+
+    # Set default operations (decode/transform/encode) based on file name
+
+    # Update operations if mode override has been set (i.e. force software, and/or enable h.265?)
+
+    Write-Host "The encode command is:"
+    Write-HJost [system.String]::Join("", $arrStrCmd)
 }
     
