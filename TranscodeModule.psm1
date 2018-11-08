@@ -385,11 +385,10 @@ function Get-FFMpeg-Batch{
                     #                         }
                     # $transcode = $transcode -Replace "tgtPathReplace", $NewName
                     Write-Debug -Message "Ffmpeg command:"; Write-Debug -Message "$arrStrCmd"
-                    'time /t >> log.txt'  | out-file transcode.bat -Encoding ascii -Append
-                    'echo ' + $fileFullName + ' >> log.txt'  | out-file transcode.bat -Encoding ascii -Append
+                    "echo Start time %TIME% for $fileFullName >> log.txt"  | out-file transcode.bat -Encoding ascii -Append
                     [system.String]::Join("", $arrStrCmd) | out-file transcode.bat -Encoding ascii -Append
+                    "echo End time %TIME% for $fileFullName >> log.txt"  | out-file transcode.bat -Encoding ascii -Append
                     #$arrStrCmd | Out-File .\transcode.bat -Encoding ascii -Append
-                    'time /t >> log.txt'  | out-file transcode.bat -Encoding ascii -Append
                     # /--- Old WMV Processing Code
                     # $transCodeSW | out-file transcodeSW.bat -Encoding ascii -Append
                 }
