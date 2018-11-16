@@ -516,6 +516,6 @@ function Get-FFMpeg-Cmd{
     # Update operations if mode override has been set (i.e. force software, and/or enable h.265?)
 
     Write-Host "The encode command is:"
-    Write-HJost [system.String]::Join("", $arrStrCmd)
+    Write-Host [system.String]::Join("", $arrStrCmd)
 }
     

@@ -67,8 +67,8 @@ function SortByRes{
     )
 
     
-$tgtPath = '\\fs2fast\poolroot\croco\!SortedByResolution\'
-$processedPath = '\\fs2fast\poolroot\croco\!Processed\'
+[string]$tgtPath = '\\fs2fast\poolroot\croco\!SortedByResolution\'
+[string]$processedPath = '\\fs2fast\poolroot\croco\!Processed\'
 #$SortResolutions = @(480,720,1080)
 $tld
 [bool]$IsVid
@@ -114,6 +114,8 @@ If (Test-Path .\RemoveItems.ps1){
 If (Test-Path .\RemoveLeftovers.ps1){
     Remove-item .\RemoveLeftovers.ps1
 }
+
+# Cleanup square brackets in names. Depends on RemoveBrackets.ps1 
 
 # Get the top level folder to sort
 Write-Debug -Message "Getting top level folder"
