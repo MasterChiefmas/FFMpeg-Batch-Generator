@@ -464,7 +464,7 @@ function Get-FFMpeg-Cmd{
     [string]$mode="",
     [string]$encodeTo="h264",
     [string]$bitrate="700k",
-    [string]$tgtPath = "\\fs2\poolroot\croco\!recodes\"
+    [string]$SaveToPath = "\\fs2\poolroot\croco\!recodes\"
     )
 
 
@@ -479,13 +479,8 @@ function Get-FFMpeg-Cmd{
     $arrStrCmd[6] = 'Output File '
 
     # Possible values to build commands with
-    # Software Modes
-
-    # Hardware Modes
-
-
-    # Settings
     
+    # Decoders
     [string]$swDecode = '-c:v h264 '
     [string]$hwDecode = '-hwaccel qsv -c:v h264_qsv '
     # 1 per type, it's a bit wasteful in a way, but it's less annoying then search/replace all the time just for the codec.
@@ -493,19 +488,23 @@ function Get-FFMpeg-Cmd{
     [string]$WMVDecode2 = '-c:v wmv2 '
     [string]$WMVDecode3 = '-c:v wmv3 '
 
+    # Transforms (Scaling)
     [string]$swTransform = '-vf "scale=640:360" '
     [string]$hwTransform = '-vf "scale_qsv=640:360" '
+    # Hybrid is for software decode, loading decoded frames into hardware frame buffer to allow QSV transform
     [string]$hybridTransform = '-init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" '
     # Confiig values for all WMV, cause WMV is annoying to work with
     [string]$WMVTransform = '-init_hw_device qsv=qsv:MFX_IMPL_hw_any -filter_hw_device qsv -vf "format=nv12,hwupload=extra_hw_frames=75,scale_qsv=640:360" '
 
+    # Video Encoder
     [string]$WMVEncodeVid = "-b:v $bitrate -c:v h264_qsv "
-    [string]$WMVEncodeAud = '-c:a aac -b:a 96k '
+    [string]$hwEncode = '-c:v ' + $encodeTo + '_qsv -b:v $bitrate '
     [string]$swEncode = '-c:v libx264 -preset superfast -b:v $bitrate '
+
+    # Audio Encoder
+    [string]$WMVEncodeAud = '-c:a aac -b:a 96k '
     [string]$AudioEncode = ' -c:a aac -b:a 96k '
     [string]$AudioCopy = ' -c:a copy '
-    # hardware encoding is currently locked to h264. Passed param handling needed, or values passed changed to ffmpeg values to allow changing it.
-    [string]$hwEncode = '-c:v h264_qsv -b:v $bitrate '
 
 
     # FFPRobe line used to get the video codec that the source file is encoded with.
