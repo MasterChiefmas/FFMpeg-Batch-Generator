@@ -70,6 +70,7 @@ function SortByRes{
 [string]$tgtPath = '\\fs2fast\poolroot\croco\!SortedByResolution\'
 [string]$processedPath = '\\fs2fast\poolroot\croco\!Processed\'
 #$SortResolutions = @(480,720,1080)
+#
 $tld
 [bool]$IsVid
 $VidRes
@@ -115,7 +116,7 @@ If (Test-Path .\RemoveLeftovers.ps1){
     Remove-item .\RemoveLeftovers.ps1
 }
 
-# Cleanup square brackets in names. Depends on RemoveBrackets.ps1 
+# Cleanup square brackets in names. Depends on TranscodeModule.psm1
 
 # Get the top level folder to sort
 Write-Debug -Message "Getting top level folder"
@@ -248,6 +249,13 @@ Foreach ($thing in $tld){
                             Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '480\' + $CleanName + '.' + $extension)
                             ("Write-Host -Foregroundcolor green 'Moving " + $file.FullName + " to " + $tgtPath + "480\" + $CleanName + "." + $extension + "'") | Out-File $batFile -Encoding ascii -Append
                             ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '480\' + $CleanName + '.' + $extension + '"') | Out-File $batFile -Encoding ascii -Append
+                            Break
+                        }
+                        # In between 720P and a "real" SD.
+                        {$_ -gt 480 -and $_ -lt 720}{
+                            Write-Debug -Message ('Move-Item ' + $file.FullName + ' ' + $tgtPath + '480Recode\' + $CleanName + '.' + $extension)
+                            ("Write-Host -Foregroundcolor green 'Moving " + $file.FullName + " to " + $tgtPath + "480Recode\" + $CleanName + "." + $extension + "'") | Out-File $batFile -Encoding ascii -Append
+                            ('Move-Item "' + $file.FullName + '" "' + $tgtPath + '480Recode\' + $CleanName + '.' + $extension + '"') | Out-File $batFile -Encoding ascii -Append
                             Break
                         }
                         {$_ -gt 480 -and $_ -le 720}{
