@@ -42,11 +42,10 @@ function Get-AviRemuxScript{
         # Version of path with mp4 extension:
         $mp4Name = ($file.FullName).TrimEnd(".avi") + ".mp4"
         $bakName = ($file.FullName).TrimEnd(".avi") + ".bak"
-        $BatBuf.Append($mp4Name + "`r`n")
         # Insert the command string
         $BatBuf.Append("ffmpeg -i """ + $file.FullName + """ -acodec copy -vcodec copy """ + $mp4name + """`r`n") 
-        $BatBuf.Append("Rename-Item  ""$file.FullName""  """ + $bakName + """`r`n") 
-        $CleanupBuf.Append("Delete-Item ""$bakName""`r`n")
+        $BatBuf.Append("Rename-Item  """ + $file.FullName + """  """ + $bakName + """`r`n") 
+        $CleanupBuf.Append("Remove-Item ""$bakName""`r`n")
     }
 
     Write-Debug -Message "Writing AviRemux.ps1"
@@ -61,9 +60,9 @@ function Get-AviRemuxScript{
     Write-Debug -Message "Writing AviCleanup.ps1"
     Try {
         # Note: Out-File inside the VS.Code powershell env sticks a BOM mark in that doesn't happen in normal powershell
-        $CleanupBuf.ToString()  | out-file CleanupBuf.ps1 -Encoding ascii
+        $CleanupBuf.ToString()  | out-file AviCleanup.ps1 -Encoding ascii
     }
     Catch{
-        Throw "Failed to write CleanupBuf.ps1. CleanupBuf Size:" + $CleanupBuf.Length
+        Throw "Failed to write AviCleanup.ps1. CleanupBuf Size:" + $CleanupBuf.Length
     }
 }
