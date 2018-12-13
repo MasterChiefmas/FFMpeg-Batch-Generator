@@ -17,14 +17,15 @@ function Get-AviRemuxScript{
     #>
 
     Param(
-    [string]$Path=".\"
+    [string]$Path=".\",
+    [string]$Mode="batch"
     )
 
 
     # Set working path
-    $Path = Read-Host "Path to search(default to current):"
+    $Path = Read-Host "Path to search(default to current)"
     # Set default if no response
-    If (!$Path){$Path = ".\"}
+    # If (!$Path){$Path = ".\"}
 
     #### Startup Checks ####        
     # Validate path
@@ -37,7 +38,7 @@ function Get-AviRemuxScript{
     $BatBuf = New-Object System.Text.StringBuilder
     $CleanupBuf = New-Object System.Text.StringBuilder
 
-    $FileList = Get-ChildItem -Recurse -Filter '*.avi' -File -ErrorAction 'SilentlyContinue' 
+    $FileList = Get-ChildItem -Recurse -Filter '*.avi' -File -ErrorAction 'SilentlyContinue' | Sort-Object
     Foreach ($file IN $FileList){
         # Version of path with mp4 extension:
         $mp4Name = ($file.FullName).TrimEnd(".avi") + ".mp4"
