@@ -20,27 +20,22 @@ function Get-AviRemuxBat{
     )
 
 
+    # Set working path
+    $Path = Read-Host "Path to search(default to current):"
+    # Set default if no response
+    If (!$Path){$Path = ".\"}
+
     #### Startup Checks ####        
-    Try{
-        $Path = Read-Host "Path to search(default to current):"
-        # Set default if no response
-        If (!$Path){$Path = ".\"}
-        # Validate path
-        If (!(Test-Path $Path)){
-            Write-Host "Path not found"
-        }
+    # Validate path
+    If (!(Test-Path $Path)){
+        Throw "Specified path not found"
     }
-    Catch{
-        Write-Debug -Message "There was a problem validating the source path"
-        Exit
-    }
-    # Trying something a little different, caching the output to memory.
+    
+    # Trying something a little different, caching the output to memory instead of writing line by line.
 
     [string]$BatBuf
     
 
-    # Note: Out-File inside the VS.Code powershell env sticks a BOM mark in that doesn't happen in normal powershell
-    $BatBuf  | out-file AviRemux.bat -Encoding ascii
 
     # Get the top level folder
     Write-Debug -Message "Getting top level folder"
@@ -49,14 +44,18 @@ function Get-AviRemuxBat{
         $tld = Get-Item $Path
     }
     catch {
-        "Unable to get Top Level Folder: $Path"
+        Throw "Unable to get Top Level Folder: $Path"
     }
 
     try {
-        try {
-            New-Item -Force .\transcode.bat | Out-Null
-            "" | Out-File .\transcode.bat -Encoding ascii -Append
-        }
-        catch{"Failed to create new transcode.bat"}
+        New-Item -Force .\transcode.bat | Out-Null
+        "" | Out-File .\transcode.bat -Encoding ascii -Append
     }
+    catch {
+            Throw "Failed to create new transcode.bat"
+    }
+    
+    # Note: Out-File inside the VS.Code powershell env sticks a BOM mark in that doesn't happen in normal powershell
+    $BatBuf  | out-file AviRemux.bat -Encoding ascii
+
 }
