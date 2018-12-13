@@ -4,6 +4,7 @@ function Get-AviRemuxBat{
     .DESCRIPTION
          A function to generate a batch file with FFMpeg commands that will remux AVIs into an mp4 container, to try and get better streaming support.
          A batch file is generated because it turns out spawning a command line task out in Powershell is really kludgey and unreliable.
+         Assumes ffmpeg.exe is on the path
     
     
     .NOTES
@@ -33,29 +34,24 @@ function Get-AviRemuxBat{
     
     # Trying something a little different, caching the output to memory instead of writing line by line.
 
-    [string]$BatBuf
-    
+    $BatBuf = New-Object System.Text.StringBuilder
 
-
-    # Get the top level folder
-    Write-Debug -Message "Getting top level folder"
-    try {
-        #$tld = (Get-Item $Path | sort-object)
-        $tld = Get-Item $Path
-    }
-    catch {
-        Throw "Unable to get Top Level Folder: $Path"
+    $FileList = Get-ChildItem -Recurse -Filter '*.avi' -File -ErrorAction 'SilentlyContinue' 
+    Foreach ($file IN $FileList){
+        # Version of path with mp4 extension:
+        $mp4Name = ($file.FullName).TrimEnd(".avi") + ".mp4"
+        $BatBuf.Append($mp4Name + "`r`n")
+        # Insert the command string
+        $BatBuf.Append("ffmpeg -i '" + $file.FullName + "' -acodec copy -vcodec copy '" + $mp4name + "'`r`n") | Out-Null
     }
 
-    try {
-        New-Item -Force .\transcode.bat | Out-Null
-        "" | Out-File .\transcode.bat -Encoding ascii -Append
+    Write-Debug -Message "Writing AviRemux.bat"
+    Try {
+        # Note: Out-File inside the VS.Code powershell env sticks a BOM mark in that doesn't happen in normal powershell
+        $BatBuf.ToString()  | out-file AviRemux.bat -Encoding ascii
     }
-    catch {
-            Throw "Failed to create new transcode.bat"
+    Catch{
+        Throw "Failed to write AviRemux.bat. Batbuf Size:" + $BatBuf.Length
     }
-    
-    # Note: Out-File inside the VS.Code powershell env sticks a BOM mark in that doesn't happen in normal powershell
-    $BatBuf  | out-file AviRemux.bat -Encoding ascii
 
 }
