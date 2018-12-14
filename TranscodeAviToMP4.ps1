@@ -18,7 +18,7 @@ function Get-AviRemuxScript{
 
     Param(
     [string]$Path=".\",
-    [string]$Action="remux"
+    [string]$Action="batch"
     )
 
 
@@ -30,7 +30,14 @@ function Get-AviRemuxScript{
     # Set action path
     #$Action = Read-Host "Action(Remux or Transcode)"
     # Set default if no response
-    # If (!$Action){$Action = "remux"}
+    If (!$Action){$Action = "batch"}
+
+    switch ( $Action )
+    {
+        'remux' {}
+        'batch' {}
+        default { $Action = "batch"}
+    }
 
 
     #### Startup Checks ####        
