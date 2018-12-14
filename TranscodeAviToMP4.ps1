@@ -18,7 +18,7 @@ function Get-AviRemuxScript{
 
     Param(
     [string]$Path=".\",
-    [string]$Mode="batch"
+    [string]$Action="remux"
     )
 
 
@@ -26,6 +26,12 @@ function Get-AviRemuxScript{
     $Path = Read-Host "Path to search(default to current)"
     # Set default if no response
     # If (!$Path){$Path = ".\"}
+
+    # Set action path
+    #$Action = Read-Host "Action(Remux or Transcode)"
+    # Set default if no response
+    # If (!$Action){$Action = "remux"}
+
 
     #### Startup Checks ####        
     # Validate path
@@ -43,8 +49,13 @@ function Get-AviRemuxScript{
         # Version of path with mp4 extension:
         $mp4Name = ($file.FullName).TrimEnd(".avi") + ".mp4"
         $bakName = ($file.FullName).TrimEnd(".avi") + ".bak"
-        # Insert the command string
+
+        # Wrap this in some logic
+        # Remux
         $BatBuf.Append("ffmpeg -i """ + $file.FullName + """ -acodec copy -vcodec copy """ + $mp4name + """`r`n") 
+        # Transcode
+        #$BatBuf.Append("ffmpeg -i """ + $file.FullName + """ -acodec copy -vcodec copy """ + $mp4name + """`r`n") 
+
         $BatBuf.Append("Rename-Item  """ + $file.FullName + """  """ + $bakName + """`r`n") 
         $CleanupBuf.Append("Remove-Item ""$bakName""`r`n")
     }
