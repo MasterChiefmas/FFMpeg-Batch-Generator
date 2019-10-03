@@ -21,10 +21,11 @@ function GetVidRes{
     [string]$ffprobeCmd
     $frameHeight
 
-    # Someday, I should check to be sure ffprobe.exe exists
+    # TODO check to be sure ffprobe.exe exists
 
     If ($target -eq $null){
         Write-Host -ForegroundColor Yellow "GetVidRes: A file path is required."
+        Write-Debug -Message "GetVidRes failed: No file specified."
         return 0
     }
     else{
@@ -63,7 +64,7 @@ function IsVidType{
     }
 }
 
-function SortByRes{
+Function SortByRes{
 
     Param(
     [string]$srcPath,
@@ -73,15 +74,14 @@ function SortByRes{
     
 [string]$tgtPath = '\\fs2fast\poolroot\croco\!SortedByResolution\'
 [string]$processedPath = '\\fs2fast\poolroot\croco\!Processed\'
-#$SortResolutions = @(480,720,1080)
-#
-$tld
+
+[string]$tld
 [bool]$IsVid
 $VidRes
 $files   
 $batFile
 
-# Hardcode acceptable resolutions?
+# FIXME Hardcode acceptable resolutions?
 
 #### Startup Checks ####        
 # Verify Sort Target + subfolders exists
@@ -95,7 +95,7 @@ Try{
     }
 }
 Catch{
-    Write-Debug -Message "There was a problem validating the path"
+    Write-Debug -Message "There was a with the source path:$srcPath"
     Pause
     Exit
 }
@@ -168,7 +168,7 @@ Foreach ($thing in $tld){
             # Get video files from the current folder
             Write-Debug -Message ("Getting files from the subfolder")
             $files = Get-ChildItem -File -Recurse -Include "*.mkv","*.mp4","*.avi","*.mpeg","*.mov","*.m4v","*.flv","*.wmv" "$thing"
-            Write-Debug -Message ("Number of files:" + ($files | Measure-Object | %{$_.Count}))
+            Write-Debug -Message ("Number of files:" + ($files | Measure-Object | ForEach-Object{$_.Count}))
 
             # Log any folders that had more then 1 video file
             # BUG: I think tagging as multi-video is excluding the sample check. maybe by design originally. I should be able to account for that though.
