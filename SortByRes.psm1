@@ -38,7 +38,7 @@ function GetVidRes{
 
 }
 
-function IsVidType{
+Function IsVidType{
     # Just checks the extension of the passed item against a list of accepted ones and returns true/false if it's in the list or not
     # Get params
     Param(
@@ -48,7 +48,7 @@ function IsVidType{
 
     [string]$fileFullName
     [string]$fileExt
-    $vidExtensions = @('mkv','mp4','wmv','avi','mpg','flv','mov','vob','m4v', 'mpeg','vob')
+    $vidExtensions = @('mkv','mp4','wmv','avi','mpg','flv','mov','vob','m4v', 'mpeg','vob','swf','rm')
 
     # Assumes a 3 character extension is present. It shouldn't matter if there isn't one.
     $fileFullName = $file.FullName.ToString()
