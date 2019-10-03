@@ -4,6 +4,10 @@
 # Maybe something lie, runtime > 60mins where size > 1GB?
 # or a sliding scale...mins/MB? figure out what seems reasonable. Reduces to ^^^
 
+# TODO - Change WMV handling to dump it all into one folder. WMVs in practice are getting handled all at once by x264.
+# TODO - Add options to set a target folder that everything gets sorted into, with res folders (for processing existing folder but keeping content together)
+
+
 function GetVidRes{
     # Get params
     Param(
